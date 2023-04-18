@@ -80,11 +80,11 @@ private:
         //Window Error Check
         if (!m_Window) {
             glfwTerminate();
-            printf("GLFW failed to create the window. \n");
+            Logger::logInfo("GLFW failed to create the window. \n");
         }
         else {
             glfwMakeContextCurrent(m_Window);
-            printf("Successfully created GLFW window. \n");
+            Logger::logInfo("Successfully created GLFW window. \n");
         }
 
     }
@@ -135,12 +135,10 @@ private:
         std::vector<VkExtensionProperties> extensions(extensionCount);
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
 
-        std::cout << "available extensions:\n";
+        Logger::logInfo("Vulkan Available extensions");
         for (const auto& extension : extensions) {
             std::cout << '\t' << extension.extensionName << '\n';
         }
-
-
 
     }
 

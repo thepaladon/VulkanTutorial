@@ -15,7 +15,15 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="VulkanTutorial.cpp">
+    <ClInclude Include="Source\ConsoleLogger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Source\VulkanTutorial.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ConsoleLogger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

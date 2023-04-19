@@ -5,7 +5,17 @@
 #include <cstdarg>
 
 namespace Logger {
-    void logMessage(MessageType type, const char* format, va_list args) {
+    std::string extractFileName(const std::string& path) {
+        std::size_t pos = path.find_last_of("/\\");
+        if (pos == std::string::npos) {
+            return path;
+        }
+        else {
+            return path.substr(pos + 1);
+        }
+    }
+
+ void logMessage(MessageType type, const char* file, int line, const char* format, va_list args) {
         std::time_t t = std::time(nullptr);
         struct tm timeInfo;
         localtime_s(&timeInfo, &t);
@@ -37,7 +47,7 @@ namespace Logger {
             break;
         }
 
-        std::printf("[%s%s\033[0m] [%s] ", colorCode, typeStr, timeStr);
+        std::printf("[%s%s\033[0m] [%s] [%s:%d] ", colorCode, typeStr, timeStr, extractFileName(file).c_str(), line);
         for (const char* p = format; *p != '\0'; ++p) {
             if (*p == '%' && *(p + 1) != '\0') {
                 ++p;
@@ -70,32 +80,34 @@ namespace Logger {
         va_end(args);
     }
 
-    void logInfo(const char* format, ...) {
+
+     void logInfo(const char* file, int line, const char* format, ...) {
         va_list args;
         va_start(args, format);
-        logMessage(MessageType::INFO, format, args);
+        logMessage(MessageType::INFO, file, line, format, args);
         va_end(args);
     }
 
-    void logDebug(const char* format, ...) {
+     void logDebug(const char* file, int line, const char* format, ...) {
         va_list args;
         va_start(args, format);
-        logMessage(MessageType::DEBUG, format, args);
+        logMessage(MessageType::DEBUG, file, line, format, args);
         va_end(args);
     }
 
-    void logWarning(const char* format, ...) {
+     void logWarning(const char* file, int line, const char* format, ...) {
         va_list args;
         va_start(args, format);
-        logMessage(MessageType::WARNING, format, args);
+        logMessage(MessageType::WARNING, file, line, format, args);
         va_end(args);
-    }
+	 }
 
-    void logError(const char* format, ...) {
-        va_list args;
-        va_start(args, format);
-        logMessage(MessageType::ERROR, format, args);
-        va_end(args);
-    }
+     void logError(const char* file, int line, const char* format, ...)
+     {
+         va_list args;
+         va_start(args, format);
+         logMessage(MessageType::ERROR, file, line, format, args);
+         va_end(args);
+     }
 
 }

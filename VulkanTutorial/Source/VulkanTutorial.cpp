@@ -51,16 +51,40 @@ bool checkValidationLayerSupport() {
     return true;
 }
 
+std::vector<const char*> getRequiredExtensions() {
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions;
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+
+    if (enableValidationLayers) {
+        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    }
+
+    return extensions;
+}
+
+static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT messageType,
+    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+    void* pUserData) {
+
+    std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+
+    return VK_FALSE;
+}
+
 
 class HelloTriangleApplication {
 public:
     void Run() {
 
-        Logger::logInfo("This is an informational message with a number: %d", 42);
-        Logger::logDebug("This is a debug message with a string: %s", "hello");
-        Logger::logWarning("This is a warning message with a floating-point number: %f", 3.14);
-        Logger::logError("This is an error message with a character: %c", '!');
-
+        LOG_INFO("This is an informational message with a number: %d", 42);
+        LOG_DEBUG("This is a debug message with a string: %s", "hello");
+        LOG_WARNING("This is a warning message with a floating-point number: %f", 3.14);
+        LOG_ERROR("This is an error message with a character: %c", '!');
 
         InitWindow();
         InitVulkan();
@@ -71,7 +95,6 @@ public:
 private:
     void InitWindow() {
         glfwInit();
-
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
@@ -80,17 +103,18 @@ private:
         //Window Error Check
         if (!m_Window) {
             glfwTerminate();
-            Logger::logInfo("GLFW failed to create the window. \n");
+            LOG_INFO("GLFW failed to create the window. \n");
         }
         else {
             glfwMakeContextCurrent(m_Window);
-            Logger::logInfo("Successfully created GLFW window. \n");
+            LOG_INFO("Successfully created GLFW window. \n");
         }
 
     }
 
     void createInstance()
     {
+
         //Validation Layer Check
         if (enableValidationLayers && !checkValidationLayerSupport()) {
             throw std::runtime_error("validation layers requested, but not available!");
@@ -108,18 +132,12 @@ private:
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         createInfo.pApplicationInfo = &appInfo;
 
-        uint32_t glfwExtensionCount = 0;
-        const char** glfwExtensions;
-
-        glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-        createInfo.enabledExtensionCount = glfwExtensionCount;
-        createInfo.ppEnabledExtensionNames = glfwExtensions;
-
 		// Val Layer in Debug enabled
         if (enableValidationLayers) {
-            createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-            createInfo.ppEnabledLayerNames = validationLayers.data();
+	        const auto extensions = getRequiredExtensions();
+            createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+            createInfo.ppEnabledExtensionNames = extensions.data();
+
         }
         else {
             createInfo.enabledLayerCount = 0;
@@ -135,12 +153,25 @@ private:
         std::vector<VkExtensionProperties> extensions(extensionCount);
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
 
-        Logger::logInfo("Vulkan Available extensions");
+        LOG_INFO("Vulkan Available extensions");
         for (const auto& extension : extensions) {
             std::cout << '\t' << extension.extensionName << '\n';
         }
 
     }
+
+    void setupDebugMessenger() {
+        if (!enableValidationLayers) return;
+
+
+        VkDebugUtilsMessengerCreateInfoEXT createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+        createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+        createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+        createInfo.pfnUserCallback = debugCallback;
+        createInfo.pUserData = nullptr; // Optional
+    }
+
 
 	void InitVulkan() {
         createInstance();
@@ -162,8 +193,8 @@ private:
     }
 
     // Vulkan
-    VkInstance m_VKInstance;
-
+    VkInstance m_VKInstance = nullptr;
+    VkDebugUtilsMessengerEXT debugMessenger = nullptr;
 
     // GLFW
     GLFWwindow* m_Window = nullptr;

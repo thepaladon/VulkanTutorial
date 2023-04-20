@@ -23,14 +23,14 @@ namespace Logger {
     };
 
     const MessageData messageData[] = {
-{"INFO", 0x00BFFF}, // added some cyan (blue-green) and made it brighter
-{"DEBUG", 0x00FF00}, // made it brighter
-{"WARNING", 0xFFD700}, // added some gold/yellow and made it brighter
-{"ERROR", 0xFF4040}, // added some pink/red and made it brighter
-{"VK_INFO", 0x00B3E6}, // added some cyan (blue-green) and made it slightly brighter than INFO
-{"VK_DEBUG", 0x00FF80}, // added some yellow-green and made it slightly brighter than DEBUG
-{"VK_WARNING", 0xFFC300}, // added some orange and made it slightly brighter and more saturated than WARNING
-{"VK_ERROR", 0xFF6666} // added some pink and made it slightly brighter and more saturated than ERROR
+	{"INFO", 0x00BFFF}, // added some cyan (blue-green) and made it brighter
+	{"DEBUG", 0x00FF00}, // made it brighter
+	{"WARNING", 0xFFD700}, // added some gold/yellow and made it brighter
+	{"ERROR", 0xFF4040}, // added some pink/red and made it brighter
+	{"VK_INFO", 0x00B3E6}, // added some cyan (blue-green) and made it slightly brighter than INFO
+	{"VK_DEBUG", 0x00FF80}, // added some yellow-green and made it slightly brighter than DEBUG
+	{"VK_WARNING", 0xFFC300}, // added some orange and made it slightly brighter and more saturated than WARNING
+	{"VK_ERROR", 0xFF6666} // added some pink and made it slightly brighter and more saturated than ERROR
     };
 
 

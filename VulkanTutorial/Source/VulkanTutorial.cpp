@@ -4,12 +4,17 @@
 #include <stdexcept>
 #include <cstdlib>
 #include <optional>
+#include <vector>
 
 #include "ConsoleLogger.h"
 
+#define VK_USE_PLATFORM_WIN32_KHR
 #define GLFW_INCLUDE_VULKAN
-#include <vector>
 #include <GLFW/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <set>
+#include <GLFW/glfw3native.h>
+
 
 constexpr uint32_t WIDTH = 800;
 constexpr uint32_t HEIGHT = 600;
@@ -277,16 +282,17 @@ private:
     struct QueueFamilyIndices {
         //Similar to Rust's "Option"?
         std::optional<uint32_t> graphicsFamily;
+        std::optional<uint32_t> presentFamily;
 
         bool isComplete() {
-            return graphicsFamily.has_value();
+            return graphicsFamily.has_value() && presentFamily.has_value();
         }
 
     };
 
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
         QueueFamilyIndices indices;
-
+        
         uint32_t queueFamilyCount = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
 
@@ -295,8 +301,16 @@ private:
 
         int i = 0;
         for (const auto& queueFamily : queueFamilies) {
+            //Querying whether the queue family is a queue family supports graphics operations
             if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
                 indices.graphicsFamily = i;
+            }
+
+            // Querying whether the queue family we found also supports "presentation"
+            VkBool32 presentSupport = false;
+            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_Surface, &presentSupport);
+            if (presentSupport) {
+                indices.presentFamily = i;
             }
 
             // Early break
@@ -315,6 +329,7 @@ private:
     void createLogicalDevice() {
         QueueFamilyIndices indices = findQueueFamilies(m_PhysicalDevice);
 
+        // Creating the Graphics Queue ------------
         VkDeviceQueueCreateInfo queueCreateInfo{};
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
@@ -345,16 +360,40 @@ private:
             throw std::runtime_error("failed to create logical device!");
         }
 
-
         vkGetDeviceQueue(m_Device, indices.graphicsFamily.value(), 0, &m_GraphicsQueue);
 
+        //Creating the Presentation Queue ------------
+        std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+        std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
+        float pres_queuePriority = 1.0f;
+        for (uint32_t queueFamily : uniqueQueueFamilies) {
+            VkDeviceQueueCreateInfo queueCreateInfo{};
+            queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            queueCreateInfo.queueFamilyIndex = queueFamily;
+            queueCreateInfo.queueCount = 1;
+            queueCreateInfo.pQueuePriorities = &pres_queuePriority;
+            queueCreateInfos.push_back(queueCreateInfo);
+        }
+
+        createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+        createInfo.pQueueCreateInfos = queueCreateInfos.data();
+
+        vkGetDeviceQueue(m_Device, indices.presentFamily.value(), 0, &m_PresentQueue);
     }
 
+
+    void createSurface()
+    {
+        if (glfwCreateWindowSurface(m_VKInstance, m_Window, nullptr, &m_Surface) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create window surface!");
+        }
+    }
 
 	void InitVulkan() {
         createInstance();
         setupDebugMessenger();
+        createSurface();
         pickPhysicalDevice();
         createLogicalDevice();
     }
@@ -373,6 +412,7 @@ private:
         }
 
         vkDestroyDevice(m_Device, nullptr);
+        vkDestroySurfaceKHR(m_VKInstance, m_Surface, nullptr);
         vkDestroyInstance(m_VKInstance, nullptr);
         glfwDestroyWindow(m_Window);
         glfwTerminate();
@@ -401,7 +441,11 @@ private:
     VkInstance m_VKInstance = VK_NULL_HANDLE;
     VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
     VkDevice m_Device = VK_NULL_HANDLE;
-    VkQueue m_GraphicsQueue;
+    VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
+    VkQueue m_PresentQueue = VK_NULL_HANDLE;
+
+    //Screen
+    VkSurfaceKHR m_Surface;
 
     // Vulkan Debug
     VkDebugUtilsMessengerEXT m_DebugMessenger = VK_NULL_HANDLE;

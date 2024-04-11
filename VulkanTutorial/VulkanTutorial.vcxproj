@@ -33,6 +33,10 @@
     <ClCompile Include="Source\ConsoleLogger.cpp" />
     <ClCompile Include="Source\VulkanTutorial.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\shader.frag" />
+    <None Include="Shaders\shader.vert" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>

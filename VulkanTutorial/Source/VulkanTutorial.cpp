@@ -1,6 +1,5 @@
 #include <vulkan/vulkan.h>
 
-#include <iostream>
 #include <stdexcept>
 #include <cstdlib>
 #include <optional>
@@ -25,6 +24,7 @@
 #include <cstdint> // Necessary for uint32_t
 #include <limits> // Necessary for std::numeric_limits
 #include <algorithm> // Necessary for std::clamp
+#include <iostream>
 
 constexpr uint32_t WIDTH = 800;
 constexpr uint32_t HEIGHT = 600;
@@ -170,9 +170,9 @@ private:
         std::vector<VkExtensionProperties> extensions(extensionCount);
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
 
-        LOG_INFO("Vulkan Available extensions");
+        LOG_INFO("Vulkan Available extensions:");
         for (const auto& extension : extensions) {
-            std::cout << '\t' << extension.extensionName << '\n';
+            printf("\t %s \n", extension.extensionName);
         }
 
         VkApplicationInfo appInfo{};
@@ -577,7 +577,6 @@ private:
         createLogicalDevice();
         createSwapChain();
         createImageViews();
-
     }
 
     void MainLoop() {

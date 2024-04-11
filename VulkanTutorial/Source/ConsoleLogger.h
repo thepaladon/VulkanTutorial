@@ -1,8 +1,4 @@
 #pragma once
-#include <cstdarg>
-
-// This entire logger is written with ChatGPT 3.5 :p
-// ...aaaaand a bit of manual debugging 
 
 namespace Logger {
 
@@ -23,41 +19,38 @@ namespace Logger {
     };
 
     const MessageData messageData[] = {
-	{"INFO", 0x00BFFF}, // added some cyan (blue-green) and made it brighter
-	{"DEBUG", 0x00FF00}, // made it brighter
-	{"WARNING", 0xFFD700}, // added some gold/yellow and made it brighter
-	{"ERROR", 0xFF4040}, // added some pink/red and made it brighter
-	{"VK_INFO", 0x00B3E6}, // added some cyan (blue-green) and made it slightly brighter than INFO
-	{"VK_DEBUG", 0x00FF80}, // added some yellow-green and made it slightly brighter than DEBUG
-	{"VK_WARNING", 0xFFC300}, // added some orange and made it slightly brighter and more saturated than WARNING
-	{"VK_ERROR", 0xFF6666} // added some pink and made it slightly brighter and more saturated than ERROR
+    {"INFO", 0x00BFFF}, // added some cyan (blue-green) and made it brighter
+    {"DEBUG", 0x00FF00}, // made it brighter
+    {"WARNING", 0xFFD700}, // added some gold/yellow and made it brighter
+    {"ERROR", 0xFF4040}, // added some pink/red and made it brighter
+    {"VK_INFO", 0x00B3E6}, // added some cyan (blue-green) and made it slightly brighter than INFO
+    {"VK_DEBUG", 0x00FF80}, // added some yellow-green and made it slightly brighter than DEBUG
+    {"VK_WARNING", 0xFFC300}, // added some orange and made it slightly brighter and more saturated than WARNING
+    {"VK_ERROR", 0xFF6666} // added some pink and made it slightly brighter and more saturated than ERROR
     };
 
-
-    //How do I make those PRIVATE and not warn users with dumb comments?!??!
-
-    //DEPRECIATED FUNCTION, USE MACRO "LOG_DEBUG" instead
+    // USE MACRO "LOG_INFO" instead
     void logInfo(const char* file, int line, const char* format, ...);
 
-    //DEPRECIATED FUNCTION, USE MACRO "LOG_WARNING" instead
+    // USE MACRO "LOG_DEBUG" instead
 	void logDebug(const char* file, int line, const char* format, ...);
 
-    //DEPRECIATED FUNCTION, USE MACRO "LOG_WARNING" instead
+    // USE MACRO "LOG_WARNING" instead
 	void logWarning(const char* file, int line, const char* format, ...);
 
-    //DEPRECIATED FUNCTION, USE MACRO "LOG_ERROR" instead
+    // USE MACRO "LOG_ERROR" instead
 	void logError(const char* file, int line, const char* format, ...);
 
-    //DEPRECIATED FUNCTION, USE MACRO "LOG_DEBUG" instead
+    // USE MACRO "VK_LOG_INFO" instead
     void VklogInfo(const char* file, int line, const char* format, ...);
     
-    //DEPRECIATED FUNCTION, USE MACRO "LOG_WARNING" instead
+    // USE MACRO "VK_LOG_DEBUG" instead
     void VklogDebug(const char* file, int line, const char* format, ...);
     
-    //DEPRECIATED FUNCTION, USE MACRO "LOG_WARNING" instead
+    // USE MACRO "VK_LOG_WARNING" instead
     void VklogWarning(const char* file, int line, const char* format, ...);
     
-    //DEPRECIATED FUNCTION, USE MACRO "LOG_ERROR" instead
+    // USE MACRO "LOG_ERROR" instead
     void VklogError(const char* file, int line, const char* format, ...);
 
 }

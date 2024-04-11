@@ -24,6 +24,7 @@
 #include <cstdint> // Necessary for uint32_t
 #include <limits> // Necessary for std::numeric_limits
 #include <algorithm> // Necessary for std::clamp
+#include <cassert>
 #include <fstream>
 #include <iostream>
 
@@ -621,6 +622,42 @@ private:
 
 	}
 
+
+	// ToDo: This is really dangerous because of the default initialization
+	struct FixedFunctionStagesInfo
+	{
+		// Required as References
+		VkViewport viewport = {};
+		VkRect2D scissor = {};
+		VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
+
+		// Real Objects
+		VkPipelineViewportStateCreateInfo viewportState = {};
+		VkPipelineColorBlendStateCreateInfo colorBlending = {};
+		VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
+		VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
+		VkPipelineRasterizationStateCreateInfo rasterizer = {};
+		VkPipelineMultisampleStateCreateInfo multisampling = {};
+		VkPipelineDynamicStateCreateInfo dynamicState = {};
+
+		// This is stupid, but at least it'll keep me aware
+		void setupRef()
+		{
+			// Check for default states
+			assert(viewport.width != 0.f);
+			assert(scissor.extent.width != 0);
+
+			viewportState.scissorCount = 1;
+			viewportState.pScissors = &scissor;
+
+			viewportState.viewportCount = 1;
+			viewportState.pViewports = &viewport;
+
+			colorBlending.attachmentCount = 1;
+			colorBlending.pAttachments = &colorBlendAttachment;
+		}
+	};
+
 	void createGraphicsPipeline()
 	{
 		const auto vertShaderCode = readFile("Shaders/Compiled/vert.spv");
@@ -643,13 +680,13 @@ private:
 		fragShaderStageInfo.module = m_FragShaderModule;
 		fragShaderStageInfo.pName = "main";
 
-		VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
+		VkPipelineShaderStageCreateInfo shaderStages[2] = { vertShaderStageInfo, fragShaderStageInfo };
 
 
-		// Dynamic Viewport and Scissor
+		// Dynamic States (Answers the Q: which of these can be set dynamically)
 		std::vector<VkDynamicState> dynamicStates = {
-			 VK_DYNAMIC_STATE_VIEWPORT,
-			 VK_DYNAMIC_STATE_SCISSOR
+			 // VK_DYNAMIC_STATE_VIEWPORT,
+			 // VK_DYNAMIC_STATE_SCISSOR
 		};
 
 		VkPipelineDynamicStateCreateInfo dynamicState{};
@@ -657,9 +694,6 @@ private:
 		dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 		dynamicState.pDynamicStates = dynamicStates.data();
 		// Scissor and Viewport set-up at drawing time (because dynamic)
-
-
-
 
 
 		// Vertex input - Empty for now, vert hardcoded in shader
@@ -677,8 +711,10 @@ private:
 		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		inputAssembly.primitiveRestartEnable = VK_FALSE;
 
+		// Viewport State (Combines both viewport and scissor)
+		
 		// Viewport
-		VkViewport viewport{};
+		VkViewport viewport = {};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
 		viewport.width = static_cast<float>(m_SwapChainExtent.width);
@@ -687,18 +723,15 @@ private:
 		viewport.maxDepth = 1.0f;
 
 		// Scissor Rect
-		VkRect2D scissor{};
+		VkRect2D scissor = {};
 		scissor.offset = { 0, 0 };
 		scissor.extent = m_SwapChainExtent;
 
-		// In case we want to use non-dynamic states
-		/*VkPipelineViewportStateCreateInfo viewportState{};
+		// Vp State
+		VkPipelineViewportStateCreateInfo viewportState = {};
 		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 		viewportState.viewportCount = 1;
-		viewportState.pViewports = &viewport;
 		viewportState.scissorCount = 1;
-		viewportState.pScissors = &scissor;*/
-
 
 		// Rasterizer
 		VkPipelineRasterizationStateCreateInfo rasterizer{};
@@ -732,7 +765,19 @@ private:
 		multisampling.alphaToOneEnable = VK_FALSE; // Optional
 
 
-		// Color Blending - Empty for now
+		// General Info
+		VkPipelineColorBlendStateCreateInfo colorBlendingCI{};
+		colorBlendingCI.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+		colorBlendingCI.logicOpEnable = VK_FALSE;
+		colorBlendingCI.logicOp = VK_LOGIC_OP_COPY; // Optional
+		colorBlendingCI.attachmentCount = 1;
+		colorBlendingCI.blendConstants[0] = 0.0f; // Optional
+		colorBlendingCI.blendConstants[1] = 0.0f; // Optional
+		colorBlendingCI.blendConstants[2] = 0.0f; // Optional
+		colorBlendingCI.blendConstants[3] = 0.0f; // Optional
+
+	
+		// Blend Formula Set-up (Attachments?)
 		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 		colorBlendAttachment.blendEnable = VK_FALSE;
@@ -755,6 +800,23 @@ private:
 			throw std::runtime_error("failed to create pipeline layout!");
 		}
 
+		FixedFunctionStagesInfo ffs = {};
+		ffs.viewport = viewport;
+		ffs.scissor = scissor;
+		ffs.viewportState = viewportState;
+		ffs.vertexInputInfo = vertexInputInfo;
+		ffs.inputAssembly = inputAssembly;
+		ffs.rasterizer = rasterizer;
+		ffs.multisampling = multisampling;
+		ffs.colorBlending = colorBlendingCI;
+		ffs.colorBlendAttachment = colorBlendAttachment;
+		ffs.dynamicState = dynamicState;
+
+		m_FixedFuncStages = ffs;
+		m_FixedFuncStages.setupRef();
+
+		m_ShaderStages[0] = shaderStages[0];
+		m_ShaderStages[1] = shaderStages[1];
 
 	}
 
@@ -798,6 +860,33 @@ private:
 			throw std::runtime_error("failed to create render pass!");
 		}
 
+		VkGraphicsPipelineCreateInfo pipelineInfo{};
+		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+
+		// Shader Stages
+		pipelineInfo.stageCount = 2;
+		pipelineInfo.pStages = m_ShaderStages;
+
+		// Fixed Stages
+		pipelineInfo.pVertexInputState = &m_FixedFuncStages.vertexInputInfo;
+		pipelineInfo.pInputAssemblyState = &m_FixedFuncStages.inputAssembly;
+		pipelineInfo.pViewportState = &m_FixedFuncStages.viewportState;
+		pipelineInfo.pRasterizationState = &m_FixedFuncStages.rasterizer;
+		pipelineInfo.pMultisampleState = &m_FixedFuncStages.multisampling;
+		pipelineInfo.pDepthStencilState = nullptr; // Optional
+		pipelineInfo.pColorBlendState = &m_FixedFuncStages.colorBlending;
+		pipelineInfo.pDynamicState = &m_FixedFuncStages.dynamicState;
+
+		pipelineInfo.layout = m_PipelineLayout; // Empty 
+		pipelineInfo.renderPass = m_RenderPass; 
+		pipelineInfo.subpass = 0;
+
+		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
+		pipelineInfo.basePipelineIndex = -1; // Optional
+
+		if (vkCreateGraphicsPipelines(m_Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_GraphicsPipeline) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create graphics pipeline!");
+		}
 	}
 
 
@@ -829,8 +918,9 @@ private:
 			DestroyDebugUtilsMessengerEXT(m_VKInstance, m_DebugMessenger, nullptr);
 		}
 
-		vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
+		vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
 		vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
+		vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
 
 		vkDestroyShaderModule(m_Device, m_VertShaderModule, nullptr);
 		vkDestroyShaderModule(m_Device, m_FragShaderModule, nullptr);
@@ -886,13 +976,21 @@ private:
 	// Describes everything in the image: 2D/3D, mipmaps, depth buffer(?) etc.
 	std::vector<VkImageView> m_SwapChainImageViews;
 
+	
 	// Shaders;
 	VkShaderModule m_VertShaderModule = VK_NULL_HANDLE;
 	VkShaderModule m_FragShaderModule = VK_NULL_HANDLE;
 
+	// Pipeline and Render Pass Setup
+	VkPipelineShaderStageCreateInfo m_ShaderStages[2];
+	FixedFunctionStagesInfo m_FixedFuncStages;
+
 	// Pipeline
 	VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
 	VkRenderPass m_RenderPass = VK_NULL_HANDLE;
+
+	// Encompasses Pipeline and Renderpass into 1 
+	VkPipeline m_GraphicsPipeline = VK_NULL_HANDLE;
 
 	//Screen
 	VkSurfaceKHR m_Surface;

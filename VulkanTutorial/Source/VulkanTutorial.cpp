@@ -615,12 +615,51 @@ private:
 
     }
 
-    void createGraphicsPipeline()
-    {
-        auto vertShaderCode = readFile("Shaders/Compiled/vert.spv");
-        auto fragShaderCode = readFile("Shaders/Compiled/frag.spv");
+    VkShaderModule createShaderModule(const std::vector<char>& code) {
+
+    	VkShaderModuleCreateInfo createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        createInfo.codeSize = code.size();
+        createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+        VkShaderModule shaderModule;
+        if (vkCreateShaderModule(m_Device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create shader module!");
+        }
+
+
+        return shaderModule;
 
     }
+
+    void createGraphicsPipeline()
+    {
+        const auto vertShaderCode = readFile("Shaders/Compiled/vert.spv");
+        const auto fragShaderCode = readFile("Shaders/Compiled/frag.spv");
+
+    	m_VertShaderModule = createShaderModule(vertShaderCode);
+        m_FragShaderModule = createShaderModule(fragShaderCode);
+
+
+		// To Use the Shaders we need a PipelineShaderStage
+        VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
+        vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+        vertShaderStageInfo.module = m_VertShaderModule;
+        vertShaderStageInfo.pName = "main";
+
+        VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
+        fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        fragShaderStageInfo.module = m_FragShaderModule;
+        fragShaderStageInfo.pName = "main";
+
+        VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
+
+    }
+
+    
+
 
 	void InitVulkan() {
         createInstance();
@@ -645,6 +684,10 @@ private:
         if (enableValidationLayers) {
             DestroyDebugUtilsMessengerEXT(m_VKInstance, m_DebugMessenger, nullptr);
         }
+
+        vkDestroyShaderModule(m_Device, m_VertShaderModule, nullptr);
+        vkDestroyShaderModule(m_Device, m_FragShaderModule, nullptr);
+
 
         for (auto imageView : m_SwapChainImageViews) {
             vkDestroyImageView(m_Device, imageView, nullptr);
@@ -696,7 +739,9 @@ private:
     // Describes everything in the image: 2D/3D, mipmaps, depth buffer(?) etc.
     std::vector<VkImageView> m_SwapChainImageViews;
 
-
+    // Shaders;
+    VkShaderModule m_VertShaderModule;
+    VkShaderModule m_FragShaderModule;
 
     //Screen
     VkSurfaceKHR m_Surface;

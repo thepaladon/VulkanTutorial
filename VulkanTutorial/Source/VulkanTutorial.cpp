@@ -1093,9 +1093,14 @@ private:
 			glfwPollEvents();
 			drawFrame();
 		}
+
+
 	}
 
 	void Cleanup() {
+
+		// Wait until everything is completed until we clean-up
+		vkDeviceWaitIdle(m_Device);
 
 		if (enableValidationLayers) {
 			DestroyDebugUtilsMessengerEXT(m_VKInstance, m_DebugMessenger, nullptr);

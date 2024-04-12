@@ -27,6 +27,7 @@
 #include <cassert>
 #include <fstream>
 #include <iostream>
+#include <string>
 
 constexpr uint32_t WIDTH = 800;
 constexpr uint32_t HEIGHT = 600;
@@ -164,7 +165,7 @@ private:
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-		m_Window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+		m_Window = glfwCreateWindow(WIDTH, HEIGHT, m_WindowName.c_str(), nullptr, nullptr);
 
 		//Window Error Check
 		if (!m_Window) {
@@ -1090,8 +1091,18 @@ private:
 	void MainLoop() {
 
 		while (!glfwWindowShouldClose(m_Window)) {
+			static double lastTime = glfwGetTime();
+			const double currentTime = glfwGetTime();
+			const double deltaTimeMs = (currentTime - lastTime) * 1000;
+			lastTime = currentTime;
+
 			glfwPollEvents();
 			drawFrame();
+
+			std::string fullName = m_WindowName + " Dt: " + std::to_string(deltaTimeMs);
+			glfwSetWindowTitle(m_Window, fullName.c_str());
+
+			glfwSwapBuffers(m_Window);
 		}
 
 
@@ -1206,6 +1217,7 @@ private:
 	VkDebugUtilsMessengerEXT m_DebugMessenger = VK_NULL_HANDLE;
 
 	// GLFW
+	std::string m_WindowName = "VulkanTutorial";
 	GLFWwindow* m_Window = nullptr;
 
 };

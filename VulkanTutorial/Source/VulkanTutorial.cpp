@@ -685,8 +685,8 @@ private:
 
 		// Dynamic States (Answers the Q: which of these can be set dynamically)
 		std::vector<VkDynamicState> dynamicStates = {
-			 // VK_DYNAMIC_STATE_VIEWPORT,
-			 // VK_DYNAMIC_STATE_SCISSOR
+			// VK_DYNAMIC_STATE_VIEWPORT,
+			// VK_DYNAMIC_STATE_SCISSOR
 		};
 
 		VkPipelineDynamicStateCreateInfo dynamicState{};
@@ -712,7 +712,7 @@ private:
 		inputAssembly.primitiveRestartEnable = VK_FALSE;
 
 		// Viewport State (Combines both viewport and scissor)
-		
+
 		// Viewport
 		VkViewport viewport = {};
 		viewport.x = 0.0f;
@@ -776,7 +776,7 @@ private:
 		colorBlendingCI.blendConstants[2] = 0.0f; // Optional
 		colorBlendingCI.blendConstants[3] = 0.0f; // Optional
 
-	
+
 		// Blend Formula Set-up (Attachments?)
 		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -878,7 +878,7 @@ private:
 		pipelineInfo.pDynamicState = &m_FixedFuncStages.dynamicState;
 
 		pipelineInfo.layout = m_PipelineLayout; // Empty 
-		pipelineInfo.renderPass = m_RenderPass; 
+		pipelineInfo.renderPass = m_RenderPass;
 		pipelineInfo.subpass = 0;
 
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
@@ -889,6 +889,109 @@ private:
 		}
 	}
 
+	void createFramebuffers() {
+		m_SwapChainFramebuffers.resize(m_SwapChainImageViews.size());
+
+		for (size_t i = 0; i < m_SwapChainImageViews.size(); i++) {
+			VkImageView attachments[] = {
+				m_SwapChainImageViews[i]
+			};
+
+			VkFramebufferCreateInfo framebufferInfo{};
+			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			framebufferInfo.renderPass = m_RenderPass;
+			framebufferInfo.attachmentCount = 1;
+			framebufferInfo.pAttachments = attachments;
+			framebufferInfo.width = m_SwapChainExtent.width;
+			framebufferInfo.height = m_SwapChainExtent.height;
+			framebufferInfo.layers = 1;
+
+			if (vkCreateFramebuffer(m_Device, &framebufferInfo, nullptr, &m_SwapChainFramebuffers[i]) != VK_SUCCESS) {
+				throw std::runtime_error("failed to create framebuffer!");
+			}
+		}
+
+	}
+
+	void createCommandPool() {
+		const QueueFamilyIndices queueFamilyIndices = findQueueFamilies(m_PhysicalDevice);
+
+		VkCommandPoolCreateInfo poolInfo{};
+		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+
+		if (vkCreateCommandPool(m_Device, &poolInfo, nullptr, &m_CommandPool) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create command pool!");
+		}
+
+	}
+
+	void createCommandBuffer()
+	{
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.commandPool = m_CommandPool;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandBufferCount = 1;
+
+		if (vkAllocateCommandBuffers(m_Device, &allocInfo, &m_CommandBuffer) != VK_SUCCESS) {
+			throw std::runtime_error("failed to allocate command buffers!");
+		}
+
+	}
+
+	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = 0; // Optional
+		beginInfo.pInheritanceInfo = nullptr; // Optional
+
+		if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+			throw std::runtime_error("failed to begin recording command buffer!");
+		}
+
+		VkRenderPassBeginInfo renderPassInfo{};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = m_RenderPass;
+		renderPassInfo.framebuffer = m_SwapChainFramebuffers[imageIndex];
+
+		renderPassInfo.renderArea.offset = { 0, 0 };
+		renderPassInfo.renderArea.extent = m_SwapChainExtent;
+
+		const VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
+		renderPassInfo.clearValueCount = 1;
+		renderPassInfo.pClearValues = &clearColor;
+
+		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
+
+		// Bind scissor and other shit here if dynamic
+		/*VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(m_SwapChainExtent.width);
+		viewport.height = static_cast<float>(m_SwapChainExtent.height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+		VkRect2D scissor{};
+		scissor.offset = { 0, 0 };
+		scissor.extent = m_SwapChainExtent;
+		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);*/
+
+		vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+
+		vkCmdEndRenderPass(commandBuffer);
+
+		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+			throw std::runtime_error("failed to record command buffer!");
+		}
+
+	}
+	
 
 	void InitVulkan() {
 
@@ -902,13 +1005,22 @@ private:
 		createImageViews();
 		createGraphicsPipeline();
 		createRenderPass();
+		createFramebuffers();
+		createCommandPool();
+		createCommandBuffer();
+		
+	}
 
+	void drawFrame()
+	{
+		
 	}
 
 	void MainLoop() {
 
 		while (!glfwWindowShouldClose(m_Window)) {
 			glfwPollEvents();
+			drawFrame();
 		}
 	}
 
@@ -918,6 +1030,8 @@ private:
 			DestroyDebugUtilsMessengerEXT(m_VKInstance, m_DebugMessenger, nullptr);
 		}
 
+		vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
+
 		vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
 		vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
 		vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
@@ -925,6 +1039,10 @@ private:
 		vkDestroyShaderModule(m_Device, m_VertShaderModule, nullptr);
 		vkDestroyShaderModule(m_Device, m_FragShaderModule, nullptr);
 
+
+		for (auto framebuffer : m_SwapChainFramebuffers) {
+			vkDestroyFramebuffer(m_Device, framebuffer, nullptr);
+		}
 
 		for (auto imageView : m_SwapChainImageViews) {
 			vkDestroyImageView(m_Device, imageView, nullptr);
@@ -964,6 +1082,10 @@ private:
 	VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
 	VkDevice m_Device = VK_NULL_HANDLE;
 
+	// Commands
+	VkCommandPool m_CommandPool = VK_NULL_HANDLE;
+	VkCommandBuffer m_CommandBuffer = VK_NULL_HANDLE;
+
 	// Automatically created with the Logical Device
 	VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
 	VkQueue m_PresentQueue = VK_NULL_HANDLE;
@@ -975,8 +1097,13 @@ private:
 
 	// Describes everything in the image: 2D/3D, mipmaps, depth buffer(?) etc.
 	std::vector<VkImageView> m_SwapChainImageViews;
+	std::vector<VkFramebuffer> m_SwapChainFramebuffers;
 
-	
+	// Sync
+	VkSemaphore imageAvailableSemaphore = VK_NULL_HANDLE;
+	VkSemaphore renderFinishedSemaphore = VK_NULL_HANDLE;
+	VkFence inFlightFence = VK_NULL_HANDLE;
+
 	// Shaders;
 	VkShaderModule m_VertShaderModule = VK_NULL_HANDLE;
 	VkShaderModule m_FragShaderModule = VK_NULL_HANDLE;

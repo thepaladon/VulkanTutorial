@@ -153,6 +153,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	return VK_FALSE;
 }
 
+
+
 // Goofy but keep it global for now
 // The annoyances of working with this "HelloTriangleApplication" class
 std::vector<VkDynamicState> g_dynamicStatesOps = {
@@ -191,6 +193,13 @@ struct Vertex {
 	}
 };
 
+const std::vector<Vertex> g_vertices = {
+	{{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+	{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+	{{-0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}},
+};
+
+
 
 class HelloTriangleApplication {
 public:
@@ -220,6 +229,9 @@ private:
 		}
 
 	}
+
+
+
 
 	void createInstance()
 	{
@@ -1009,7 +1021,11 @@ private:
 		scissor.extent = m_SwapChainExtent;
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-		vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+		VkBuffer vertexBuffers[] = { m_VertexBuffer };
+		VkDeviceSize offsets[] = { 0 };
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+		vkCmdDraw(commandBuffer, static_cast<uint32_t>(g_vertices.size()), 1, 0, 0);
 
 		vkCmdEndRenderPass(commandBuffer);
 
@@ -1061,6 +1077,56 @@ private:
 		vkDestroySwapchainKHR(m_Device, m_SwapChain, nullptr);
 	}
 
+	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+		VkPhysicalDeviceMemoryProperties memProperties;
+		vkGetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &memProperties);
+
+		for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+			if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+				return i;
+			}
+		}
+
+		throw std::runtime_error("failed to find suitable memory type!");
+
+	}
+
+	void createVertexBuffer()
+	{
+		VkBufferCreateInfo bufferInfo{};
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.size = sizeof(g_vertices[0]) * g_vertices.size();
+		bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		if (vkCreateBuffer(m_Device, &bufferInfo, nullptr, &m_VertexBuffer) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create vertex buffer!");
+		}
+
+
+		VkMemoryRequirements memRequirements;
+		vkGetBufferMemoryRequirements(m_Device, m_VertexBuffer, &memRequirements);
+
+		VkMemoryAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.allocationSize = memRequirements.size;
+		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+		if (vkAllocateMemory(m_Device, &allocInfo, nullptr, &m_VertexBufferMemory) != VK_SUCCESS) {
+			throw std::runtime_error("failed to allocate vertex buffer memory!");
+		}
+
+		// Associate the buffer memory with the buffer
+		vkBindBufferMemory(m_Device, m_VertexBuffer, m_VertexBufferMemory, 0);
+
+
+		// Fill buffer wit CPU memory
+		void* data;
+		vkMapMemory(m_Device, m_VertexBufferMemory, 0, bufferInfo.size, 0, &data);
+		memcpy(data, g_vertices.data(), (size_t)bufferInfo.size);
+		vkUnmapMemory(m_Device, m_VertexBufferMemory);
+
+	}
 
 	void InitVulkan() {
 
@@ -1076,9 +1142,11 @@ private:
 		createRenderPass();
 		createFramebuffers();
 		createCommandPool();
+		createVertexBuffer();
 		createCommandBuffer();
 		createSyncObjects();
 	}
+
 
 	void drawFrame()
 	{
@@ -1185,6 +1253,9 @@ private:
 			vkDestroyFence(m_Device, m_InFlightFence[i], nullptr);
 		}
 
+		vkDestroyBuffer(m_Device, m_VertexBuffer, nullptr);
+		vkFreeMemory(m_Device, m_VertexBufferMemory, nullptr);
+
 		vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
 
 		vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
@@ -1265,8 +1336,11 @@ private:
 	VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
 	VkRenderPass m_RenderPass = VK_NULL_HANDLE;
 
-	// Encompasses Pipeline and Renderpass into 1 
+	// Encompasses Pipeline and Renderpass into 1
 	VkPipeline m_GraphicsPipeline = VK_NULL_HANDLE;
+
+	VkBuffer m_VertexBuffer = VK_NULL_HANDLE;
+	VkDeviceMemory m_VertexBufferMemory = VK_NULL_HANDLE;
 
 	//Screen
 	VkSurfaceKHR m_Surface;

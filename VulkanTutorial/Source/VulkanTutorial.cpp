@@ -150,6 +150,12 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	return VK_FALSE;
 }
 
+// Goofy but keep it global for now
+// The annoyances of working with this "HelloTriangleApplication" class
+std::vector<VkDynamicState> g_dynamicStatesOps = {
+	VK_DYNAMIC_STATE_VIEWPORT,
+	VK_DYNAMIC_STATE_SCISSOR
+};
 
 class HelloTriangleApplication {
 public:
@@ -625,13 +631,10 @@ private:
 
 	}
 
-
+	
 	// ToDo: This is really dangerous because of the default initialization
 	struct FixedFunctionStagesInfo
 	{
-		// Required as References
-		VkViewport viewport = {};
-		VkRect2D scissor = {};
 		VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
 
 		// Real Objects
@@ -647,14 +650,16 @@ private:
 		void setupRef()
 		{
 			// Check for default states
-			assert(viewport.width != 0.f);
-			assert(scissor.extent.width != 0);
+			// assert(viewport.width != 0.f);
+			// assert(scissor.extent.width != 0);
+			// viewportState.scissorCount = 1;
+			// viewportState.pScissors = &scissor;
+			// viewportState.viewportCount = 1;
+			// viewportState.pViewports = &viewport;
 
-			viewportState.scissorCount = 1;
-			viewportState.pScissors = &scissor;
-
-			viewportState.viewportCount = 1;
-			viewportState.pViewports = &viewport;
+			dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+			dynamicState.dynamicStateCount = static_cast<uint32_t>(g_dynamicStatesOps.size());
+			dynamicState.pDynamicStates = g_dynamicStatesOps.data();
 
 			colorBlending.attachmentCount = 1;
 			colorBlending.pAttachments = &colorBlendAttachment;
@@ -685,20 +690,6 @@ private:
 
 		VkPipelineShaderStageCreateInfo shaderStages[2] = { vertShaderStageInfo, fragShaderStageInfo };
 
-
-		// Dynamic States (Answers the Q: which of these can be set dynamically)
-		std::vector<VkDynamicState> dynamicStates = {
-			// VK_DYNAMIC_STATE_VIEWPORT,
-			// VK_DYNAMIC_STATE_SCISSOR
-		};
-
-		VkPipelineDynamicStateCreateInfo dynamicState{};
-		dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-		dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
-		dynamicState.pDynamicStates = dynamicStates.data();
-		// Scissor and Viewport set-up at drawing time (because dynamic)
-
-
 		// Vertex input - Empty for now, vert hardcoded in shader
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -714,23 +705,7 @@ private:
 		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		inputAssembly.primitiveRestartEnable = VK_FALSE;
 
-		// Viewport State (Combines both viewport and scissor)
-
-		// Viewport
-		VkViewport viewport = {};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(m_SwapChainExtent.width);
-		viewport.height = static_cast<float>(m_SwapChainExtent.height);
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		// Scissor Rect
-		VkRect2D scissor = {};
-		scissor.offset = { 0, 0 };
-		scissor.extent = m_SwapChainExtent;
-
-		// Vp State
+		// Viewport State
 		VkPipelineViewportStateCreateInfo viewportState = {};
 		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 		viewportState.viewportCount = 1;
@@ -804,8 +779,6 @@ private:
 		}
 
 		FixedFunctionStagesInfo ffs = {};
-		ffs.viewport = viewport;
-		ffs.scissor = scissor;
 		ffs.viewportState = viewportState;
 		ffs.vertexInputInfo = vertexInputInfo;
 		ffs.inputAssembly = inputAssembly;
@@ -813,7 +786,6 @@ private:
 		ffs.multisampling = multisampling;
 		ffs.colorBlending = colorBlendingCI;
 		ffs.colorBlendAttachment = colorBlendAttachment;
-		ffs.dynamicState = dynamicState;
 
 		m_FixedFuncStages = ffs;
 		m_FixedFuncStages.setupRef();
@@ -984,7 +956,7 @@ private:
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
 
 		// Bind scissor and other shit here if dynamic
-		/*VkViewport viewport{};
+		VkViewport viewport{};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
 		viewport.width = static_cast<float>(m_SwapChainExtent.width);
@@ -996,7 +968,7 @@ private:
 		VkRect2D scissor{};
 		scissor.offset = { 0, 0 };
 		scissor.extent = m_SwapChainExtent;
-		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);*/
+		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
 		vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 

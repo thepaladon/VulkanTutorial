@@ -678,7 +678,7 @@ private:
 
 	}
 
-	
+
 	// ToDo: This is really dangerous because of the default initialization
 	struct FixedFunctionStagesInfo
 	{
@@ -1153,7 +1153,7 @@ private:
 		VkResult res = VK_SUCCESS;
 		const auto commandBuffer = m_CommandBuffer[currentFrame];
 		const auto imageAvailableS = m_ImageAvailableSemaphore[currentFrame];
-		const auto renderedS= m_RenderFinishedSemaphore[currentFrame];
+		const auto renderedS = m_RenderFinishedSemaphore[currentFrame];
 		const auto inFlightFence = m_InFlightFence[currentFrame];
 
 		vkWaitForFences(m_Device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
@@ -1218,8 +1218,11 @@ private:
 
 	void MainLoop() {
 
-		while (!glfwWindowShouldClose(m_Window) ) {
+		double lastFpsTime = glfwGetTime();
+		int frameCount = 0;
+		double deltaTimeAccumulator = 0;  // Accumulator for delta times
 
+		while (!glfwWindowShouldClose(m_Window)) {
 			static double lastTime = glfwGetTime();
 			const double currentTime = glfwGetTime();
 			const double deltaTimeMs = (currentTime - lastTime) * 1000;
@@ -1227,15 +1230,29 @@ private:
 
 			glfwPollEvents();
 
-			//Only draw if the Window is set to correct size
+			// Only draw if the window is not minimized
 			if (glfwGetWindowAttrib(m_Window, GLFW_ICONIFIED) != GLFW_TRUE) {
 				drawFrame();
-			
-				std::string fullName = m_WindowName + " Dt: " + std::to_string(deltaTimeMs);
-				glfwSetWindowTitle(m_Window, fullName.c_str());
+				frameCount++;  // Increase frame count
+				deltaTimeAccumulator += deltaTimeMs;  // Accumulate delta time in milliseconds
+
+				// Calculate time passed and update FPS and average delta time every second
+				if (currentTime - lastFpsTime >= 1.0) {
+					const double fps = frameCount / (currentTime - lastFpsTime);
+					const double averageDeltaTimeMs = deltaTimeAccumulator / frameCount;  // Calculate average delta time per frame
+					lastFpsTime = currentTime;
+					frameCount = 0;
+					deltaTimeAccumulator = 0;  // Reset delta time accumulator
+
+					char title[256];  // Buffer to hold the window title
+					sprintf_s(title, "%s - FPS: %.0f Avg Dt: %.2f ms", m_WindowName.c_str(), fps, averageDeltaTimeMs);
+					LOG_INFO("%s", title);
+					glfwSetWindowTitle(m_Window, title);
+				}
 			}
 
 		}
+
 	}
 
 	void Cleanup() {

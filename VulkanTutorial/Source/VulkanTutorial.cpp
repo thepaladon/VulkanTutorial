@@ -194,9 +194,15 @@ struct Vertex {
 };
 
 const std::vector<Vertex> g_vertices = {
-	{{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+	{{0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}},
 	{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
 	{{-0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}},
+		{{-0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+
+};
+
+const std::vector<uint16_t> g_indices = {
+	0, 1, 2, 2, 3, 0
 };
 
 
@@ -1024,8 +1030,9 @@ private:
 		VkBuffer vertexBuffers[] = { m_VertexBuffer };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+		vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-		vkCmdDraw(commandBuffer, static_cast<uint32_t>(g_vertices.size()), 1, 0, 0);
+		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(g_indices.size()), 1, 0, 0, 0);
 
 		vkCmdEndRenderPass(commandBuffer);
 
@@ -1175,6 +1182,28 @@ private:
 		vkFreeMemory(m_Device, stagingBufferMemory, nullptr);
 	}
 
+	void createIndexBuffer()
+	{
+		VkDeviceSize bufferSize = sizeof(g_indices[0]) * g_indices.size();
+
+		VkBuffer stagingBuffer;
+		VkDeviceMemory stagingBufferMemory;
+		createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+		void* data;
+		vkMapMemory(m_Device, stagingBufferMemory, 0, bufferSize, 0, &data);
+		memcpy(data, g_indices.data(), (size_t)bufferSize);
+		vkUnmapMemory(m_Device, stagingBufferMemory);
+
+		createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_IndexBuffer, m_IndexBufferMemory);
+
+		copyBuffer(stagingBuffer, m_IndexBuffer, bufferSize);
+
+		vkDestroyBuffer(m_Device, stagingBuffer, nullptr);
+		vkFreeMemory(m_Device, stagingBufferMemory, nullptr);
+
+	}
+
 	void InitVulkan() {
 
 		// ToDo: Fix this madness...
@@ -1190,6 +1219,7 @@ private:
 		createFramebuffers();
 		createCommandPool();
 		createVertexBuffer();
+		createIndexBuffer();
 		createCommandBuffer();
 		createSyncObjects();
 	}
@@ -1317,8 +1347,11 @@ private:
 			vkDestroyFence(m_Device, m_InFlightFence[i], nullptr);
 		}
 
+		// Destroy our draw buffers
 		vkDestroyBuffer(m_Device, m_VertexBuffer, nullptr);
 		vkFreeMemory(m_Device, m_VertexBufferMemory, nullptr);
+		vkDestroyBuffer(m_Device, m_IndexBuffer, nullptr);
+		vkFreeMemory(m_Device, m_IndexBufferMemory, nullptr);
 
 		vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
 
@@ -1405,6 +1438,8 @@ private:
 
 	VkBuffer m_VertexBuffer = VK_NULL_HANDLE;
 	VkDeviceMemory m_VertexBufferMemory = VK_NULL_HANDLE;
+	VkBuffer m_IndexBuffer = VK_NULL_HANDLE;
+	VkDeviceMemory m_IndexBufferMemory = VK_NULL_HANDLE;
 
 	//Screen
 	VkSurfaceKHR m_Surface;

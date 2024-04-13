@@ -186,6 +186,19 @@
     </Link>
     <ProjectReference />
     <ProjectReference />
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <CustomBuildStep>
+      <Command>call $(ProjectDir)Shaders\compile.bat</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>Compiling Shaders</Message>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>$(ProjectDir)Shaders\Compiled\*.spv</Outputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test|x64'">
     <ClCompile>
@@ -211,6 +224,19 @@
     </Link>
     <ProjectReference />
     <ProjectReference />
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <CustomBuildStep>
+      <Command>call $(ProjectDir)Shaders\compile.bat</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>Compiling Shaders</Message>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>$(ProjectDir)Shaders\Compiled\*.spv</Outputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -234,6 +260,19 @@
     </Link>
     <ProjectReference />
     <ProjectReference />
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <CustomBuildStep>
+      <Command>call $(ProjectDir)Shaders\compile.bat</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>Compiling Shaders</Message>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>$(ProjectDir)Shaders\Compiled\*.spv</Outputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

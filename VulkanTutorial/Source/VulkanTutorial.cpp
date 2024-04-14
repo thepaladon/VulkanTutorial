@@ -1,12 +1,10 @@
-#include <vulkan/vulkan.h>
 
-#include <stdexcept>
-#include <cstdlib>
-#include <optional>
-#include <vector>
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_vulkan.h"
 
 #include "ConsoleLogger.h"
 
+#include <vulkan/vulkan.h>
 #define VK_USE_PLATFORM_WIN32_KHR
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -18,14 +16,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-// Undefine the conflicting "max" used by:
-// "if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {"
-#ifdef max
-#undef max
-#endif
-
-
-
 #include <cstdint> // Necessary for uint32_t
 #include <limits> // Necessary for std::numeric_limits
 #include <algorithm> // Necessary for std::clamp
@@ -34,6 +24,10 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <stdexcept>
+#include <cstdlib>
+#include <optional>
+#include <vector>
 
 constexpr uint32_t WIDTH = 800;
 constexpr uint32_t HEIGHT = 600;
@@ -246,7 +240,71 @@ private:
 	}
 
 
+	void InitImgui()
+	{
+		// Setup Dear ImGui context
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGuiIO& io = ImGui::GetIO(); (void)io;
+		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
+		// Setup Dear ImGui style
+		ImGui::StyleColorsDark();
+		//ImGui::StyleColorsClassic();
+
+		QueueFamilyIndices indices = findQueueFamilies(m_PhysicalDevice);
+		assert(indices.isComplete());
+
+		// Setup Platform/Renderer bindings
+		ImGui_ImplGlfw_InitForVulkan(m_Window, true);
+		ImGui_ImplVulkan_InitInfo init_info = {};
+		init_info.Instance = m_VKInstance;
+		init_info.PhysicalDevice = m_PhysicalDevice;
+		init_info.Device = m_Device;
+		init_info.QueueFamily = indices.graphicsFamily.value();
+		init_info.Queue = m_GraphicsQueue;
+		init_info.PipelineCache = nullptr;
+		init_info.DescriptorPool = m_DescPool;
+		init_info.Allocator = nullptr;
+		init_info.MinImageCount = m_MinImageCount;
+		init_info.ImageCount = m_MinImageCount + 1;
+		init_info.CheckVkResultFn = nullptr;
+		init_info.RenderPass = m_RenderPass;
+		ImGui_ImplVulkan_Init(&init_info);
+
+
+		/*m_ImGuiWindow = {};
+
+		auto wd = &m_ImGuiWindow;
+
+		wd->Surface = m_Surface;
+
+		// Check for WSI support
+		VkBool32 res;
+
+		vkGetPhysicalDeviceSurfaceSupportKHR(m_PhysicalDevice, indices.graphicsFamily.value(), wd->Surface, &res);
+		if (res != VK_TRUE)
+		{
+			fprintf(stderr, "Error no WSI support on physical device 0\n");
+			exit(-1);
+		}
+
+		// Select Surface Format
+		const VkFormat requestSurfaceImageFormat[] = { m_SwapChainImageFormat };
+		const VkColorSpaceKHR requestSurfaceColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+		wd->SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(m_PhysicalDevice, wd->Surface, requestSurfaceImageFormat, (size_t)IM_ARRAYSIZE(requestSurfaceImageFormat), requestSurfaceColorSpace);
+
+		// Select Present Mode
+		// ToDo: Make this use the same as chooseSwapPresentMode()
+		VkPresentModeKHR present_modes[] = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_FIFO_KHR };
+		wd->PresentMode = ImGui_ImplVulkanH_SelectPresentMode(m_PhysicalDevice, wd->Surface, &present_modes[0], IM_ARRAYSIZE(present_modes));
+		//printf("[vulkan] Selected PresentMode = %d\n", wd->PresentMode);
+
+		// Create SwapChain, RenderPass, Framebuffer, etc.
+		IM_ASSERT(m_MinImageCount >= 2);
+		ImGui_ImplVulkanH_CreateOrResizeWindow(m_VKInstance, m_PhysicalDevice, m_Device, wd, indices.graphicsFamily.value(), nullptr, m_SwapChainExtent.width, m_SwapChainExtent.width, m_MinImageCount);*/
+	}
 
 	void createInstance()
 	{
@@ -592,7 +650,7 @@ private:
 		VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
 		VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
 		VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
-
+		m_MinImageCount = swapChainSupport.capabilities.minImageCount;
 		uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
 
 		if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
@@ -1332,6 +1390,9 @@ private:
 		createIndexBuffer();
 		createCommandBuffer();
 		createSyncObjects();
+
+		InitImgui();
+
 	}
 
 
@@ -1474,7 +1535,7 @@ private:
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
-			
+
 			vkDestroyBuffer(m_Device, m_UniformBuffers[i], nullptr);
 			vkFreeMemory(m_Device, m_UniformBuffersMemory[i], nullptr);
 
@@ -1527,6 +1588,9 @@ private:
 
 	uint32_t currentFrame = 0;
 
+	// ImGui
+	uint32_t m_MinImageCount = 0; //Gotten from createSwapchain 
+	ImGui_ImplVulkanH_Window m_ImGuiWindow;
 
 	// Vulkan
 	VkInstance m_VKInstance = VK_NULL_HANDLE;

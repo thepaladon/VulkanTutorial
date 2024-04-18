@@ -118,8 +118,6 @@ std::vector<const char*> getRequiredExtensions() {
 	return extensions;
 }
 
-
-
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -286,7 +284,6 @@ private:
 
 		// Setup Dear ImGui style
 		ImGui::StyleColorsDark();
-		//ImGui::StyleColorsClassic();
 
 		VkAttachmentDescription attachment = {};
 		attachment.format = m_SwapChainImageFormat;
@@ -379,15 +376,13 @@ private:
 
 		ImGui_ImplVulkan_CreateFontsTexture();
 
-		//clear font textures from cpu data
-
 	}
 
 	void cleanupImGui()
 	{
-		ImGui_ImplVulkan_DestroyFontsTexture();
 		ImGui_ImplGlfw_Shutdown();
 		ImGui_ImplVulkan_Shutdown();
+		ImGui::DestroyContext();
 		vkDestroyDescriptorPool(m_Device, m_ImguiPool, nullptr);
 		vkDestroyRenderPass(m_Device, m_ImGuiRenderPass, nullptr);
 	}
@@ -1021,7 +1016,7 @@ private:
 		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // No Stencil yet
 
 		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // ImGui sets it to "Present" 
 		// VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL: Images used as color attachment
 		// VK_IMAGE_LAYOUT_PRESENT_SRC_KHR: Images to be presented in the swap chain
 		// VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL: Images to be used as destination for a memory copy operation
@@ -1190,6 +1185,25 @@ private:
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSets[currentFrame], 0, nullptr);
 		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(g_indices.size()), 1, 0, 0, 0);
+
+		vkCmdEndRenderPass(commandBuffer);
+
+
+		// ImGui Render Pass
+		{
+			VkRenderPassBeginInfo info = {};
+			info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			info.renderPass = m_ImGuiRenderPass;
+			info.framebuffer = m_SwapChainFramebuffers[imageIndex];
+			info.renderArea.offset = { 0 , 0 };
+			info.renderArea.extent = m_SwapChainExtent;
+			info.clearValueCount = 1;
+			info.pClearValues = &clearColor;
+			vkCmdBeginRenderPass(commandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
+		}
+
+		// Record Imgui Draw Data and draw funcs into command buffer
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
 		vkCmdEndRenderPass(commandBuffer);
 
@@ -1454,7 +1468,6 @@ private:
 		createSyncObjects();
 
 		InitImgui();
-
 	}
 
 
@@ -1558,11 +1571,22 @@ private:
 
 			glfwPollEvents();
 
+			ImGui_ImplVulkan_NewFrame();
+			ImGui_ImplGlfw_NewFrame();
+			ImGui::NewFrame();
+			ImGui::ShowDemoWindow();
+			ImGui::Render();
+
+
+
+
 			// Only draw if the window is not minimized
 			if (glfwGetWindowAttrib(m_Window, GLFW_ICONIFIED) != GLFW_TRUE) {
 				drawFrame(runningTime / 1000);
 				frameCount++;  // Increase frame count
 				deltaTimeAccumulator += deltaTimeMs;  // Accumulate delta time in milliseconds
+
+
 
 				// Calculate time passed and update FPS and average delta time every second
 				if (currentTime - lastFpsTime >= 1.0) {

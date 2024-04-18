@@ -288,8 +288,6 @@ private:
 		ImGui::StyleColorsDark();
 		//ImGui::StyleColorsClassic();
 
-
-
 		VkAttachmentDescription attachment = {};
 		attachment.format = m_SwapChainImageFormat;
 		attachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -333,6 +331,34 @@ private:
 		QueueFamilyIndices indices = findQueueFamilies(m_PhysicalDevice);
 		assert(indices.isComplete());
 
+		//1: create descriptor pool for IMGUI
+		// the size of the pool is very oversize, but it's copied from imgui demo itself.
+		VkDescriptorPoolSize pool_sizes[] =
+		{
+			{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+			{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
+		};
+
+		VkDescriptorPoolCreateInfo pool_info = {};
+		pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+		pool_info.maxSets = 1000;
+		pool_info.poolSizeCount = static_cast<uint32_t>(std::size(pool_sizes));
+		pool_info.pPoolSizes = pool_sizes;
+
+		if (vkCreateDescriptorPool(m_Device, &pool_info, nullptr, &m_ImguiPool)) {
+			throw std::runtime_error("Could not create Dear ImGui's Descriptor Pool");
+		}
+
 
 		// Setup Platform/Renderer bindings
 		ImGui_ImplGlfw_InitForVulkan(m_Window, true);
@@ -343,7 +369,7 @@ private:
 		init_info.QueueFamily = indices.graphicsFamily.value();
 		init_info.Queue = m_GraphicsQueue;
 		init_info.PipelineCache = VK_NULL_HANDLE;
-		init_info.DescriptorPool = m_DescPool;
+		init_info.DescriptorPool = m_ImguiPool;
 		init_info.Allocator = VK_NULL_HANDLE;
 		init_info.MinImageCount = m_MinImageCount;
 		init_info.ImageCount = m_MinImageCount + 1;
@@ -351,39 +377,19 @@ private:
 		init_info.RenderPass = m_ImGuiRenderPass;
 		ImGui_ImplVulkan_Init(&init_info);
 
-		//ImGui_ImplVulkan_CreateFontsTexture();
+		ImGui_ImplVulkan_CreateFontsTexture();
 
+		//clear font textures from cpu data
 
-		/*m_ImGuiWindow = {};
+	}
 
-		auto wd = &m_ImGuiWindow;
-
-		wd->Surface = m_Surface;
-
-		// Check for WSI support
-		VkBool32 res;
-
-		vkGetPhysicalDeviceSurfaceSupportKHR(m_PhysicalDevice, indices.graphicsFamily.value(), wd->Surface, &res);
-		if (res != VK_TRUE)
-		{
-			fprintf(stderr, "Error no WSI support on physical device 0\n");
-			exit(-1);
-		}
-
-		// Select Surface Format
-		const VkFormat requestSurfaceImageFormat[] = { m_SwapChainImageFormat };
-		const VkColorSpaceKHR requestSurfaceColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
-		wd->SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(m_PhysicalDevice, wd->Surface, requestSurfaceImageFormat, (size_t)IM_ARRAYSIZE(requestSurfaceImageFormat), requestSurfaceColorSpace);
-
-		// Select Present Mode
-		// ToDo: Make this use the same as chooseSwapPresentMode()
-		VkPresentModeKHR present_modes[] = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_FIFO_KHR };
-		wd->PresentMode = ImGui_ImplVulkanH_SelectPresentMode(m_PhysicalDevice, wd->Surface, &present_modes[0], IM_ARRAYSIZE(present_modes));
-		//printf("[vulkan] Selected PresentMode = %d\n", wd->PresentMode);
-
-		// Create SwapChain, RenderPass, Framebuffer, etc.
-		IM_ASSERT(m_MinImageCount >= 2);
-		ImGui_ImplVulkanH_CreateOrResizeWindow(m_VKInstance, m_PhysicalDevice, m_Device, wd, indices.graphicsFamily.value(), nullptr, m_SwapChainExtent.width, m_SwapChainExtent.width, m_MinImageCount);*/
+	void cleanupImGui()
+	{
+		ImGui_ImplVulkan_DestroyFontsTexture();
+		ImGui_ImplGlfw_Shutdown();
+		ImGui_ImplVulkan_Shutdown();
+		vkDestroyDescriptorPool(m_Device, m_ImguiPool, nullptr);
+		vkDestroyRenderPass(m_Device, m_ImGuiRenderPass, nullptr);
 	}
 
 	void createInstance()
@@ -1582,6 +1588,8 @@ private:
 		// Wait until everything is completed until we clean-up
 		vkDeviceWaitIdle(m_Device);
 
+		cleanupImGui();
+
 		if (enableValidationLayers) {
 			DestroyDebugUtilsMessengerEXT(m_VKInstance, m_DebugMessenger, nullptr);
 		}
@@ -1647,6 +1655,7 @@ private:
 	// ImGui
 	uint32_t m_MinImageCount = 0; //Gotten from createSwapchain 
 	ImGui_ImplVulkanH_Window m_ImGuiWindow;
+	VkDescriptorPool m_ImguiPool = VK_NULL_HANDLE;
 	VkRenderPass m_ImGuiRenderPass = VK_NULL_HANDLE;
 
 

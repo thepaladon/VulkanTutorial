@@ -7,12 +7,14 @@
 #include <vulkan/vulkan.h>
 #define VK_USE_PLATFORM_WIN32_KHR
 #define GLFW_INCLUDE_VULKAN
+
 #include <GLFW/glfw3.h>
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <set>
 #include <GLFW/glfw3native.h>
 
 #define GLM_FORCE_RADIANS
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -30,6 +32,8 @@
 #include <vector>
 
 #include "ImGuizmo.h"
+
+#include "FreeCamera.h"
 
 constexpr uint32_t WIDTH = 1600;
 constexpr uint32_t HEIGHT = 1200;
@@ -1475,8 +1479,15 @@ private:
 
 	void updateUniformBuffer(uint32_t currentImage, double dt) {
 
-		
-		
+		UniformBufferObject ubo;
+		ubo.proj = camera.GetProjection();
+		ubo.view = camera.GetView();
+		ubo.model = model;
+
+		// Y Coordinate of Clip Coordinates is flipped, this fixes that.
+		//ubo.proj[1][1] *= -1;
+
+
 		memcpy(m_UniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 	}
 
@@ -1557,12 +1568,7 @@ private:
 		int frameCount = 0;
 		double deltaTimeAccumulator = 0;  // Accumulator for delta times
 
-		ubo.model = glm::identity<glm::mat4>();
-		ubo.view = glm::lookAt(glm::vec3(-2.0f, -2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		ubo.proj = glm::perspective(glm::radians(45.0f), (float)m_SwapChainExtent.width / (float)m_SwapChainExtent.height, 0.1f, 10.0f);
-
-		// Y Coordinate of Clip Coordinates is flipped, this fixes that.
-		ubo.proj[1][1] *= -1;
+		camera = FreeCamera();
 
 
 		while (!glfwWindowShouldClose(m_Window)) {
@@ -1587,15 +1593,40 @@ private:
 			ImGuizmo::Enable(true);
 
 			ImGuiIO& io = ImGui::GetIO();
+			// Assuming the keys are mapped and captured through ImGui
+			const float forwardBackward = ((float)io.KeysDown['W'] - (float)io.KeysDown['S']); // W = 1, S = -1
+			const float leftRight = ((float)io.KeysDown['D'] - (float)io.KeysDown['A']); // D = 1, A = -1
+			const float upDown = ((float)io.KeysDown['R'] - (float)io.KeysDown['F']); // R = 1, F = -1
+
+			// Define the key codes for arrow keys
+			const int keyLeft = GLFW_KEY_LEFT;
+			const int keyRight = GLFW_KEY_RIGHT;
+			const int keyUp = GLFW_KEY_UP;
+			const int keyDown = GLFW_KEY_DOWN;
+
+			// Calculate horizontal and vertical movement
+			float horizontal = ((float)io.KeysDown[keyRight] - (float)io.KeysDown[keyLeft]); // Right = 1, Left = -1
+			float vertical = ((float)io.KeysDown[keyUp] - (float)io.KeysDown[keyDown]); // Up = 1, Down = -1
+
+			// Create the movement vector
+			glm::vec2 moveVector(horizontal, vertical);
+			// Create and update the camera movement vector
+			const glm::vec3 cameraMoveVector(leftRight, upDown, forwardBackward);
+
 			ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
 
-			//if (ImGuizmo::IsOver())
-				ImGuizmo::Manipulate(&ubo.view[0][0], &ubo.proj[0][0], operation, mode, &ubo.model[0][0]);
+			camera.CameraInput((float)deltaTimeMs / 1000, cameraMoveVector, moveVector);
+			camera.UpdateCamera(io.DisplaySize.x, io.DisplaySize.y);
 
-			//ImGuizmo::DrawCubes(&ubo.view[0][0], &ubo.proj[0][0], &ubo.model[0][0], 1);
+			auto view = camera.GetView();
+			auto proj = camera.GetProjection();
+
+				ImGuizmo::Manipulate(&view[0][0], &proj[0][0], operation, mode, &model[0][0]);
+
+			//ImGuizmo::DrawCubes(&view[0][0], &proj[0][0], &model[0][0], 1);
 
 			glm::mat4 t = glm::identity<glm::mat4>();
-			ImGuizmo::DrawGrid(&ubo.view[0][0], &ubo.proj[0][0], &t[0][0], 50);
+			ImGuizmo::DrawGrid(&view[0][0], &proj[0][0], &t[0][0], 50);
 
 			ImGui::ShowDemoWindow();
 			ImGui::Render();
@@ -1694,12 +1725,14 @@ private:
 
 	uint32_t currentFrame = 0;
 
+	FreeCamera camera;
+	glm::mat4 model;
+
 	// ImGui
 	uint32_t m_MinImageCount = 0; //Gotten from createSwapchain 
 	ImGui_ImplVulkanH_Window m_ImGuiWindow;
 	VkDescriptorPool m_ImguiPool = VK_NULL_HANDLE;
 	VkRenderPass m_ImGuiRenderPass = VK_NULL_HANDLE;
-	UniformBufferObject ubo{};
 
 	// Vulkan
 	VkInstance m_VKInstance = VK_NULL_HANDLE;

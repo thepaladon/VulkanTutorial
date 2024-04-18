@@ -240,6 +240,41 @@ private:
 	}
 
 
+	VkCommandBuffer beginSingleTimeCommand()
+	{
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		// ToDo Optimize this
+		allocInfo.commandPool = m_CommandPool;
+		allocInfo.commandBufferCount = 1;
+
+		VkCommandBuffer commandBuffer;
+		vkAllocateCommandBuffers(m_Device, &allocInfo, &commandBuffer);
+
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+		vkBeginCommandBuffer(commandBuffer, &beginInfo);
+		return commandBuffer;
+	}
+
+	void endSingleTimeCommand(VkCommandBuffer& commandBuffer)
+	{
+		vkEndCommandBuffer(commandBuffer);
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+
+		vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+		vkQueueWaitIdle(m_GraphicsQueue);
+
+		vkFreeCommandBuffers(m_Device, m_CommandPool, 1, &commandBuffer);
+	}
+
 	void InitImgui()
 	{
 		// Setup Dear ImGui context
@@ -253,8 +288,51 @@ private:
 		ImGui::StyleColorsDark();
 		//ImGui::StyleColorsClassic();
 
+
+
+		VkAttachmentDescription attachment = {};
+		attachment.format = m_SwapChainImageFormat;
+		attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		attachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+		attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		attachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+		VkAttachmentReference color_attachment = {};
+		color_attachment.attachment = 0;
+		color_attachment.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkSubpassDescription subpass = {};
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &color_attachment;
+
+		VkSubpassDependency dependency = {};
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.dstSubpass = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.srcAccessMask = 0;  // or VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		VkRenderPassCreateInfo info = {};
+		info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		info.attachmentCount = 1;
+		info.pAttachments = &attachment;
+		info.subpassCount = 1;
+		info.pSubpasses = &subpass;
+		info.dependencyCount = 1;
+		info.pDependencies = &dependency;
+		if (vkCreateRenderPass(m_Device, &info, nullptr, &m_ImGuiRenderPass) != VK_SUCCESS) {
+			throw std::runtime_error("Could not create Dear ImGui's render pass");
+		}
+
+
 		QueueFamilyIndices indices = findQueueFamilies(m_PhysicalDevice);
 		assert(indices.isComplete());
+
 
 		// Setup Platform/Renderer bindings
 		ImGui_ImplGlfw_InitForVulkan(m_Window, true);
@@ -264,14 +342,16 @@ private:
 		init_info.Device = m_Device;
 		init_info.QueueFamily = indices.graphicsFamily.value();
 		init_info.Queue = m_GraphicsQueue;
-		init_info.PipelineCache = nullptr;
+		init_info.PipelineCache = VK_NULL_HANDLE;
 		init_info.DescriptorPool = m_DescPool;
-		init_info.Allocator = nullptr;
+		init_info.Allocator = VK_NULL_HANDLE;
 		init_info.MinImageCount = m_MinImageCount;
 		init_info.ImageCount = m_MinImageCount + 1;
-		init_info.CheckVkResultFn = nullptr;
-		init_info.RenderPass = m_RenderPass;
+		init_info.CheckVkResultFn = VK_NULL_HANDLE;
+		init_info.RenderPass = m_ImGuiRenderPass;
 		ImGui_ImplVulkan_Init(&init_info);
+
+		//ImGui_ImplVulkan_CreateFontsTexture();
 
 
 		/*m_ImGuiWindow = {};
@@ -1197,21 +1277,7 @@ private:
 
 	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
 
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		// ToDo Optimize this
-		allocInfo.commandPool = m_CommandPool;
-		allocInfo.commandBufferCount = 1;
-
-		VkCommandBuffer commandBuffer;
-		vkAllocateCommandBuffers(m_Device, &allocInfo, &commandBuffer);
-
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-		vkBeginCommandBuffer(commandBuffer, &beginInfo);
+		VkCommandBuffer commandBuffer = beginSingleTimeCommand();
 
 		VkBufferCopy copyRegion{};
 		copyRegion.srcOffset = 0; // Optional
@@ -1219,17 +1285,7 @@ private:
 		copyRegion.size = size;
 		vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-		vkEndCommandBuffer(commandBuffer);
-
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffer;
-
-		vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-		vkQueueWaitIdle(m_GraphicsQueue);
-
-		vkFreeCommandBuffers(m_Device, m_CommandPool, 1, &commandBuffer);
+		endSingleTimeCommand(commandBuffer);
 	}
 
 	void createVertexBuffer()
@@ -1591,6 +1647,8 @@ private:
 	// ImGui
 	uint32_t m_MinImageCount = 0; //Gotten from createSwapchain 
 	ImGui_ImplVulkanH_Window m_ImGuiWindow;
+	VkRenderPass m_ImGuiRenderPass = VK_NULL_HANDLE;
+
 
 	// Vulkan
 	VkInstance m_VKInstance = VK_NULL_HANDLE;

@@ -23,6 +23,13 @@ const glm::mat4& Transform::GetModelMatrix()
 	return m_ModelMatrix;
 }
 
+glm::mat4* Transform::GetModelMatrixPtr()
+{
+	if (m_Dirty)
+		UpdateTransform();
+	return &m_ModelMatrix;
+}
+
 const glm::mat4 Transform::GetInverseModelMatrix()
 {
 	if (m_Dirty)

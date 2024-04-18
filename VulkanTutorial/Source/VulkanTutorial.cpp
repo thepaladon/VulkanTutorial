@@ -214,6 +214,92 @@ const std::vector<uint16_t> g_indices = {
 };
 
 
+void EditTransform(FreeCamera& camera, glm::mat4* matrix)
+{
+	// Settings / Default Params
+	constexpr ImGuiKey translateKey = ImGuiKey_1;
+	constexpr ImGuiKey rotateKey = ImGuiKey_2;
+	constexpr ImGuiKey scaleKey = ImGuiKey_3;
+	constexpr ImGuiKey universalKey = ImGuiKey_4;
+	constexpr ImGuiKey snapTogglKey = ImGuiKey_GraveAccent;
+
+	static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::TRANSLATE);
+	static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::WORLD);
+	static glm::vec3 snapStaticPos = { 1.0, 1.0, 1.0 };
+	static float snapStaticRot = 30.0;
+	static float snapStaticScale = 1.0;
+	static bool useSnap = true;
+
+	ImGuizmo::Enable(true);
+
+	if (ImGui::IsKeyPressed(translateKey))
+		mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
+	if (ImGui::IsKeyPressed(rotateKey))
+		mCurrentGizmoOperation = ImGuizmo::ROTATE;
+	if (ImGui::IsKeyPressed(scaleKey)) // r Key
+		mCurrentGizmoOperation = ImGuizmo::SCALE;
+	if (ImGui::IsKeyPressed(universalKey)) // r Key
+		mCurrentGizmoOperation = ImGuizmo::UNIVERSAL;
+
+	if (ImGui::RadioButton("Translate", mCurrentGizmoOperation == ImGuizmo::TRANSLATE))
+		mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
+	ImGui::SameLine();
+	if (ImGui::RadioButton("Rotate", mCurrentGizmoOperation == ImGuizmo::ROTATE))
+		mCurrentGizmoOperation = ImGuizmo::ROTATE;
+	ImGui::SameLine();
+	if (ImGui::RadioButton("Scale", mCurrentGizmoOperation == ImGuizmo::SCALE))
+		mCurrentGizmoOperation = ImGuizmo::SCALE;
+	float matrixTranslation[3], matrixRotation[3], matrixScale[3];
+	ImGuizmo::DecomposeMatrixToComponents((float*)matrix, matrixTranslation, matrixRotation, matrixScale);
+	ImGui::InputFloat3("Tr", matrixTranslation );
+	ImGui::InputFloat3("Rt", matrixRotation);
+	ImGui::InputFloat3("Sc", matrixScale);
+	ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, (float*)matrix);
+
+	if (mCurrentGizmoOperation != ImGuizmo::SCALE)
+	{
+		if (ImGui::RadioButton("Local", mCurrentGizmoMode == ImGuizmo::LOCAL))
+			mCurrentGizmoMode = ImGuizmo::LOCAL;
+		ImGui::SameLine();
+		if (ImGui::RadioButton("World", mCurrentGizmoMode == ImGuizmo::WORLD))
+			mCurrentGizmoMode = ImGuizmo::WORLD;
+	}
+	if (ImGui::IsKeyPressed(snapTogglKey))
+		useSnap = !useSnap;
+	ImGui::Checkbox("Test", &useSnap);
+	ImGui::SameLine();
+
+	glm::vec3 snap;
+	switch (mCurrentGizmoOperation)
+	{
+	case ImGuizmo::TRANSLATE:
+		snap = snapStaticPos;
+		ImGui::InputFloat3("Snap", &snapStaticPos.x);
+		break;
+	case ImGuizmo::ROTATE:
+		snap = { snapStaticRot, 0.0f, 0.0f };
+		ImGui::InputFloat("Angle Snap", &snapStaticRot);
+		break;
+	case ImGuizmo::SCALE:
+		snap = { snapStaticScale, 0.0f, 0.0f };
+		ImGui::InputFloat("Scale Snap", &snapStaticScale);
+		break;
+	default: 
+		assert("Shouldn't be able to get here");
+	}
+
+	const ImGuiIO& io = ImGui::GetIO();
+	ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+
+	auto view = camera.GetView();
+	auto proj = camera.GetProjection();
+
+	ImGuizmo::Manipulate(&view[0][0], &proj[0][0], mCurrentGizmoOperation, mCurrentGizmoMode, (float*)matrix, NULL, useSnap ? &snap.x : NULL);
+
+	auto t = glm::identity<glm::mat4>();
+	ImGuizmo::DrawGrid(&view[0][0], &proj[0][0], &t[0][0], 50);
+}
+
 class HelloTriangleApplication {
 public:
 	void Run() {
@@ -1482,10 +1568,10 @@ private:
 		UniformBufferObject ubo;
 		ubo.proj = camera.GetProjection();
 		ubo.view = camera.GetView();
-		ubo.model = model;
+		ubo.model = cubeModel.GetModelMatrix();
 
 		// Y Coordinate of Clip Coordinates is flipped, this fixes that.
-		//ubo.proj[1][1] *= -1;
+		ubo.proj[1][1] *= -1;
 
 
 		memcpy(m_UniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
@@ -1569,7 +1655,7 @@ private:
 		double deltaTimeAccumulator = 0;  // Accumulator for delta times
 
 		camera = FreeCamera();
-
+		camera.m_Transform.SetPosition(0.0, 2.0, 10.0);
 
 		while (!glfwWindowShouldClose(m_Window)) {
 			static double lastTime = glfwGetTime();
@@ -1586,12 +1672,6 @@ private:
 			ImGui::NewFrame();
 			ImGuizmo::BeginFrame();
 
-			// Set the matrix operation and mode
-			ImGuizmo::OPERATION operation = ImGuizmo::TRANSLATE;
-			ImGuizmo::MODE mode = ImGuizmo::LOCAL;
-
-			ImGuizmo::Enable(true);
-
 			ImGuiIO& io = ImGui::GetIO();
 			// Assuming the keys are mapped and captured through ImGui
 			const float forwardBackward = ((float)io.KeysDown['W'] - (float)io.KeysDown['S']); // W = 1, S = -1
@@ -1599,36 +1679,27 @@ private:
 			const float upDown = ((float)io.KeysDown['R'] - (float)io.KeysDown['F']); // R = 1, F = -1
 
 			// Define the key codes for arrow keys
-			const int keyLeft = GLFW_KEY_LEFT;
-			const int keyRight = GLFW_KEY_RIGHT;
-			const int keyUp = GLFW_KEY_UP;
-			const int keyDown = GLFW_KEY_DOWN;
+			constexpr int keyLeft = GLFW_KEY_LEFT;
+			constexpr int keyRight = GLFW_KEY_RIGHT;
+			constexpr int keyUp = GLFW_KEY_UP;
+			constexpr int keyDown = GLFW_KEY_DOWN;
 
 			// Calculate horizontal and vertical movement
-			float horizontal = ((float)io.KeysDown[keyRight] - (float)io.KeysDown[keyLeft]); // Right = 1, Left = -1
-			float vertical = ((float)io.KeysDown[keyUp] - (float)io.KeysDown[keyDown]); // Up = 1, Down = -1
+			const float horizontal = ((float)io.KeysDown[keyRight] - (float)io.KeysDown[keyLeft]); // Right = 1, Left = -1
+			const float vertical = ((float)io.KeysDown[keyUp] - (float)io.KeysDown[keyDown]); // Up = 1, Down = -1
 
 			// Create the movement vector
-			glm::vec2 moveVector(horizontal, vertical);
+			const glm::vec2 moveVector(horizontal, vertical);
 			// Create and update the camera movement vector
 			const glm::vec3 cameraMoveVector(leftRight, upDown, forwardBackward);
-
-			ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
 
 			camera.CameraInput((float)deltaTimeMs / 1000, cameraMoveVector, moveVector);
 			camera.UpdateCamera(io.DisplaySize.x, io.DisplaySize.y);
 
-			auto view = camera.GetView();
-			auto proj = camera.GetProjection();
+			ImGui::Begin("Gizmo Transform");
+			EditTransform(camera, cubeModel.GetModelMatrixPtr());
+			ImGui::End();
 
-				ImGuizmo::Manipulate(&view[0][0], &proj[0][0], operation, mode, &model[0][0]);
-
-			//ImGuizmo::DrawCubes(&view[0][0], &proj[0][0], &model[0][0], 1);
-
-			glm::mat4 t = glm::identity<glm::mat4>();
-			ImGuizmo::DrawGrid(&view[0][0], &proj[0][0], &t[0][0], 50);
-
-			ImGui::ShowDemoWindow();
 			ImGui::Render();
 
 			// Only draw if the window is not minimized
@@ -1724,9 +1795,9 @@ private:
 	}
 
 	uint32_t currentFrame = 0;
+	Transform cubeModel;
 
 	FreeCamera camera;
-	glm::mat4 model;
 
 	// ImGui
 	uint32_t m_MinImageCount = 0; //Gotten from createSwapchain 

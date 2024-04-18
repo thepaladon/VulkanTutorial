@@ -15,6 +15,7 @@ public:
 	// Gets the model matrix
 	const glm::mat4& GetModelMatrix();
 	const glm::mat4 GetInverseModelMatrix();
+	glm::mat4* GetModelMatrixPtr();
 
 	// Set local position
 	const glm::vec3& SetPosition(float x, float y, float z);
@@ -64,7 +65,7 @@ public:
 
 	static glm::vec3 GetGlobalUp() { return {0.f, 1.f, 0.f}; }
 	static glm::vec3 GetGlobalRight() { return {1.f, 0.f, 0.0}; }
-	static glm::vec3 GetGlobalForward() { return {0.f, 0.f, 1.f}; }
+	static glm::vec3 GetGlobalForward() { return {0.f, 0.f, -1.f}; }
 
 	// Flag the transform as dirty
 	void Dirty() { m_Dirty = true; }

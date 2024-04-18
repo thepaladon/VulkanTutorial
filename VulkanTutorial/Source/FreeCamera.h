@@ -14,6 +14,8 @@ public:
 	glm::mat4 GetProjection() const;
 	glm::mat4 GetView();
 
+	Transform m_Transform;
+
 private:
 
 	float m_NearPlane = 0.01f;
@@ -22,8 +24,6 @@ private:
 
 	glm::vec3 m_ImagePlanePos; //unused, later for rt
 	float m_AspectRatio;
-
-	Transform m_Transform;
 
 	// For movement
 	float m_ViewScalar = 2.0f;

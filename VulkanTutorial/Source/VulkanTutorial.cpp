@@ -29,8 +29,10 @@
 #include <optional>
 #include <vector>
 
-constexpr uint32_t WIDTH = 800;
-constexpr uint32_t HEIGHT = 600;
+#include "ImGuizmo.h"
+
+constexpr uint32_t WIDTH = 1600;
+constexpr uint32_t HEIGHT = 1200;
 constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
 //Validation Layers
@@ -221,8 +223,7 @@ private:
 	void InitWindow() {
 		glfwInit();
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-		//glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
+		
 		m_Window = glfwCreateWindow(WIDTH, HEIGHT, m_WindowName.c_str(), nullptr, nullptr);
 
 		//Window Error Check
@@ -1468,19 +1469,14 @@ private:
 		createSyncObjects();
 
 		InitImgui();
+
 	}
 
 
 	void updateUniformBuffer(uint32_t currentImage, double dt) {
 
-		UniformBufferObject ubo{};
-		ubo.model = glm::rotate(glm::mat4(1.0f), (float)dt * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.proj = glm::perspective(glm::radians(45.0f), (float)m_SwapChainExtent.width / (float)m_SwapChainExtent.height, 0.1f, 10.0f);
-
-		// Y Coordinate of Clip Coordinates is flipped, this fixes that.
-		ubo.proj[1][1] *= -1;
-
+		
+		
 		memcpy(m_UniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 	}
 
@@ -1561,6 +1557,14 @@ private:
 		int frameCount = 0;
 		double deltaTimeAccumulator = 0;  // Accumulator for delta times
 
+		ubo.model = glm::identity<glm::mat4>();
+		ubo.view = glm::lookAt(glm::vec3(-2.0f, -2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		ubo.proj = glm::perspective(glm::radians(45.0f), (float)m_SwapChainExtent.width / (float)m_SwapChainExtent.height, 0.1f, 10.0f);
+
+		// Y Coordinate of Clip Coordinates is flipped, this fixes that.
+		ubo.proj[1][1] *= -1;
+
+
 		while (!glfwWindowShouldClose(m_Window)) {
 			static double lastTime = glfwGetTime();
 			static double runningTime = glfwGetTime();
@@ -1574,19 +1578,33 @@ private:
 			ImGui_ImplVulkan_NewFrame();
 			ImGui_ImplGlfw_NewFrame();
 			ImGui::NewFrame();
+			ImGuizmo::BeginFrame();
+
+			// Set the matrix operation and mode
+			ImGuizmo::OPERATION operation = ImGuizmo::TRANSLATE;
+			ImGuizmo::MODE mode = ImGuizmo::LOCAL;
+
+			ImGuizmo::Enable(true);
+
+			ImGuiIO& io = ImGui::GetIO();
+			ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+
+			//if (ImGuizmo::IsOver())
+				ImGuizmo::Manipulate(&ubo.view[0][0], &ubo.proj[0][0], operation, mode, &ubo.model[0][0]);
+
+			//ImGuizmo::DrawCubes(&ubo.view[0][0], &ubo.proj[0][0], &ubo.model[0][0], 1);
+
+			glm::mat4 t = glm::identity<glm::mat4>();
+			ImGuizmo::DrawGrid(&ubo.view[0][0], &ubo.proj[0][0], &t[0][0], 50);
+
 			ImGui::ShowDemoWindow();
 			ImGui::Render();
-
-
-
 
 			// Only draw if the window is not minimized
 			if (glfwGetWindowAttrib(m_Window, GLFW_ICONIFIED) != GLFW_TRUE) {
 				drawFrame(runningTime / 1000);
 				frameCount++;  // Increase frame count
 				deltaTimeAccumulator += deltaTimeMs;  // Accumulate delta time in milliseconds
-
-
 
 				// Calculate time passed and update FPS and average delta time every second
 				if (currentTime - lastFpsTime >= 1.0) {
@@ -1681,7 +1699,7 @@ private:
 	ImGui_ImplVulkanH_Window m_ImGuiWindow;
 	VkDescriptorPool m_ImguiPool = VK_NULL_HANDLE;
 	VkRenderPass m_ImGuiRenderPass = VK_NULL_HANDLE;
-
+	UniformBufferObject ubo{};
 
 	// Vulkan
 	VkInstance m_VKInstance = VK_NULL_HANDLE;

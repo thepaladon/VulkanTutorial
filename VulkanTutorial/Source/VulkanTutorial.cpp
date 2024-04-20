@@ -1682,12 +1682,9 @@ private:
 
 		int width, height, channels;
 
-
 		// Load the image
 		filePath = R"(Resources\Images\bricks.png)";
-		unsigned char* data = stbi_load(filePath, &width, &height, &channels, 0);
-
-		if (data) {
+		if (unsigned char* data = stbi_load(filePath, &width, &height, &channels, 0)) {
 			LOG_INFO("Loaded image: %s ", filePath);
 			LOG_INFO("Dimensions: %i x %i", width, height);
 			LOG_INFO("Channels: %i", channels);
@@ -1699,8 +1696,6 @@ private:
 			LOG_ERROR("Failed to load image: %s", filePath);
 			LOG_ERROR("STB_IMAGE Error: %s", stbi_failure_reason());
 		}
-
-
 
 		while (!glfwWindowShouldClose(m_Window)) {
 			static double lastTime = glfwGetTime();

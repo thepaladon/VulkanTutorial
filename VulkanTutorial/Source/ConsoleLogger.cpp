@@ -1,5 +1,6 @@
 #include "ConsoleLogger.h"
 
+#include <cassert>
 #include <iostream>
 #include <ctime>
 #include <cstdarg>
@@ -38,8 +39,14 @@ namespace Logger {
 				case 'c':
 					std::printf("%c", va_arg(args, int));
 					break;
+
+                case 'i':
+                    std::printf("%i", va_arg(args, int));
+                    break;
+
 				default:
-					std::printf("INVALID");
+					std::printf("Percent '%c' Not implemented", *p);
+                    assert(false);
 					break;
 				}
 			}

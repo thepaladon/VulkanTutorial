@@ -231,4 +231,7 @@ data/textures/**
 data/README_asset_pack.md
 data/font*.*
 data/roboto*.*
-/VulkanTutorial/imgui.ini
+
+# ImGuis Config file*imgui.ini
+imgui.ini
+ 

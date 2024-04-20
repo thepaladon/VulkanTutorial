@@ -35,6 +35,13 @@
 
 #include "FreeCamera.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
+
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 constexpr uint32_t WIDTH = 1600;
 constexpr uint32_t HEIGHT = 1200;
 constexpr int MAX_FRAMES_IN_FLIGHT = 2;
@@ -251,7 +258,7 @@ void EditTransform(FreeCamera& camera, glm::mat4* matrix)
 		mCurrentGizmoOperation = ImGuizmo::SCALE;
 	float matrixTranslation[3], matrixRotation[3], matrixScale[3];
 	ImGuizmo::DecomposeMatrixToComponents((float*)matrix, matrixTranslation, matrixRotation, matrixScale);
-	ImGui::InputFloat3("Tr", matrixTranslation );
+	ImGui::InputFloat3("Tr", matrixTranslation);
 	ImGui::InputFloat3("Rt", matrixRotation);
 	ImGui::InputFloat3("Sc", matrixScale);
 	ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, (float*)matrix);
@@ -284,7 +291,7 @@ void EditTransform(FreeCamera& camera, glm::mat4* matrix)
 		snap = { snapStaticScale, 0.0f, 0.0f };
 		ImGui::InputFloat("Scale Snap", &snapStaticScale);
 		break;
-	default: 
+	default:
 		assert("Shouldn't be able to get here");
 	}
 
@@ -313,7 +320,7 @@ private:
 	void InitWindow() {
 		glfwInit();
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-		
+
 		m_Window = glfwCreateWindow(WIDTH, HEIGHT, m_WindowName.c_str(), nullptr, nullptr);
 
 		//Window Error Check
@@ -1656,6 +1663,44 @@ private:
 
 		camera = FreeCamera();
 		camera.m_Transform.SetPosition(0.0, 2.0, 10.0);
+
+		Assimp::Importer importer;
+
+		// Attempt to load the model file at the given filePath
+		auto filePath = R"(Resources\Models\DamagedHelmet\DamagedHelmet.glb)";
+		const aiScene* scene = importer.ReadFile(filePath, aiProcess_Triangulate | aiProcess_FlipUVs);
+
+		// Check if the import was successful
+		if (scene) {
+			LOG_INFO("Successfully loaded model: %s ", filePath);
+			LOG_INFO("Number of meshes: %i", scene->mNumMeshes);
+		}
+		else {
+			LOG_ERROR("Failed to load model: %s", filePath);
+			LOG_ERROR("ASSIMP Error: %s", importer.GetErrorString());
+		}
+
+		int width, height, channels;
+
+
+		// Load the image
+		filePath = R"(Resources\Images\bricks.png)";
+		unsigned char* data = stbi_load(filePath, &width, &height, &channels, 0);
+
+		if (data) {
+			LOG_INFO("Loaded image: %s ", filePath);
+			LOG_INFO("Dimensions: %i x %i", width, height);
+			LOG_INFO("Channels: %i", channels);
+
+			// Free the image memory
+			stbi_image_free(data);
+		}
+		else {
+			LOG_ERROR("Failed to load image: %s", filePath);
+			LOG_ERROR("STB_IMAGE Error: %s", stbi_failure_reason());
+		}
+
+
 
 		while (!glfwWindowShouldClose(m_Window)) {
 			static double lastTime = glfwGetTime();

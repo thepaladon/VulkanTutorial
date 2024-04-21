@@ -247,9 +247,15 @@ void EditTransform(FreeCamera& camera, glm::mat4* matrix)
 	static glm::vec3 snapStaticPos = { 1.0, 1.0, 1.0 };
 	static float snapStaticRot = 30.0;
 	static float snapStaticScale = 1.0;
-	static bool useSnap = true;
+	static bool useSnap = false;
+	static bool drawGizmo = false;
+	static bool drawGrid = false;
 
-	ImGuizmo::Enable(true);
+	ImGui::Checkbox("Draw Gizmo", &drawGizmo);
+	ImGui::Checkbox("Draw Grid", &drawGrid);
+
+	ImGuizmo::Enable(drawGizmo);
+
 
 	if (ImGui::IsKeyPressed(translateKey))
 		mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
@@ -285,7 +291,7 @@ void EditTransform(FreeCamera& camera, glm::mat4* matrix)
 	}
 	if (ImGui::IsKeyPressed(snapTogglKey))
 		useSnap = !useSnap;
-	ImGui::Checkbox("Test", &useSnap);
+	ImGui::Checkbox("Snapping", &useSnap);
 	ImGui::SameLine();
 
 	glm::vec3 snap;
@@ -313,10 +319,13 @@ void EditTransform(FreeCamera& camera, glm::mat4* matrix)
 	auto view = camera.GetView();
 	auto proj = camera.GetProjection();
 
-	ImGuizmo::Manipulate(&view[0][0], &proj[0][0], mCurrentGizmoOperation, mCurrentGizmoMode, (float*)matrix, NULL, useSnap ? &snap.x : NULL);
+	if(drawGizmo)
+		ImGuizmo::Manipulate(&view[0][0], &proj[0][0], mCurrentGizmoOperation, mCurrentGizmoMode, (float*)matrix, NULL, useSnap ? &snap.x : NULL);
 
 	auto t = glm::identity<glm::mat4>();
-	ImGuizmo::DrawGrid(&view[0][0], &proj[0][0], &t[0][0], 50);
+
+	if (drawGrid)
+		ImGuizmo::DrawGrid(&view[0][0], &proj[0][0], &t[0][0], 50);
 }
 
 class HelloTriangleApplication {
@@ -922,7 +931,7 @@ private:
 		m_SwapChainImageViews.resize(m_SwapChainImages.size());
 
 		for (uint32_t i = 0; i < m_SwapChainImages.size(); i++) {
-			m_SwapChainImageViews[i] = createImageView(m_SwapChainImages[i], m_SwapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+			m_SwapChainImageViews[i] = createImageView(m_SwapChainImages[i], 1, m_SwapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 		}
 	}
 
@@ -1194,7 +1203,7 @@ private:
 		renderPassInfo.dependencyCount = 1;
 		renderPassInfo.pDependencies = &dependency;
 
-		
+
 
 		if (vkCreateRenderPass(m_Device, &renderPassInfo, nullptr, &m_RenderPass) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create render pass!");
@@ -1299,7 +1308,7 @@ private:
 
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = m_SwapChainExtent;
-		
+
 		std::array<VkClearValue, 2> clearValues{};
 		clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
 		clearValues[1].depthStencil = { 1.0f, 0 };
@@ -1401,6 +1410,10 @@ private:
 			vkDestroyImageView(m_Device, imageView, nullptr);
 		}
 		vkDestroySwapchainKHR(m_Device, m_SwapChain, nullptr);
+
+		vkDestroyImageView(m_Device, m_DepthImageView, nullptr);
+		vkDestroyImage(m_Device, m_DepthImage, nullptr);
+		vkFreeMemory(m_Device, m_DepthImageMemory, nullptr);
 	}
 
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
@@ -1614,7 +1627,7 @@ private:
 
 	}
 
-	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
+	void createImage2D(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
 
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -1622,7 +1635,7 @@ private:
 		imageInfo.extent.width = width;
 		imageInfo.extent.height = height;
 		imageInfo.extent.depth = 1;
-		imageInfo.mipLevels = 1;
+		imageInfo.mipLevels = mipLevels;
 		imageInfo.arrayLayers = 1;
 		imageInfo.format = format;
 		imageInfo.tiling = tiling;
@@ -1650,7 +1663,7 @@ private:
 		vkBindImageMemory(m_Device, image, imageMemory, 0);
 	}
 
-	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
+	void transitionImageLayout(VkImage image, VkFormat format, uint32_t mipLevels, VkImageLayout oldLayout, VkImageLayout newLayout) {
 
 		// ToDo, move this out to be able to pass multiple transitions into 1 Command Buffer
 		VkCommandBuffer commandBuffer = beginSingleTimeCommand();
@@ -1664,7 +1677,7 @@ private:
 		barrier.image = image;
 		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.levelCount = mipLevels;
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = 1;
 
@@ -1739,13 +1752,104 @@ private:
 		endSingleTimeCommand(commandBuffer);
 	}
 
+	void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels) {
+
+		// Check if image format supports linear blitting
+		VkFormatProperties formatProperties;
+		vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice, imageFormat, &formatProperties);
+
+		if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
+			throw std::runtime_error("texture image format does not support linear blitting!");
+		}
+
+		VkCommandBuffer commandBuffer = beginSingleTimeCommand();
+
+		VkImageMemoryBarrier barrier{};
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.image = image;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = 1;
+		barrier.subresourceRange.levelCount = 1;
+
+		int32_t mipWidth = texWidth;
+		int32_t mipHeight = texHeight;
+
+		for (uint32_t i = 1; i < mipLevels; i++) {
+
+			barrier.subresourceRange.baseMipLevel = i - 1;
+			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+			vkCmdPipelineBarrier(commandBuffer,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+				0, nullptr,
+				0, nullptr,
+				1, &barrier);
+
+			VkImageBlit blit{};
+			blit.srcOffsets[0] = { 0, 0, 0 };
+			blit.srcOffsets[1] = { mipWidth, mipHeight, 1 };
+			blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			blit.srcSubresource.mipLevel = i - 1;
+			blit.srcSubresource.baseArrayLayer = 0;
+			blit.srcSubresource.layerCount = 1;
+			blit.dstOffsets[0] = { 0, 0, 0 };
+			blit.dstOffsets[1] = { mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1 };
+			blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			blit.dstSubresource.mipLevel = i;
+			blit.dstSubresource.baseArrayLayer = 0;
+			blit.dstSubresource.layerCount = 1;
+
+			vkCmdBlitImage(commandBuffer,
+				image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				1, &blit,
+				VK_FILTER_LINEAR);
+
+			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+			vkCmdPipelineBarrier(commandBuffer,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+				0, nullptr,
+				0, nullptr,
+				1, &barrier);
+
+			if (mipWidth > 1) mipWidth /= 2;
+			if (mipHeight > 1) mipHeight /= 2;
+
+		}
+
+		barrier.subresourceRange.baseMipLevel = mipLevels - 1;
+		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		vkCmdPipelineBarrier(commandBuffer,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+			0, nullptr,
+			0, nullptr,
+			1, &barrier);
+
+		endSingleTimeCommand(commandBuffer);
+	}
+
 
 	void createTextureImage()
 	{
 		int texWidth, texHeight, texChannels;
 		constexpr auto filePath = R"(Resources\Images\bricks.png)";
 		stbi_uc* pixels = stbi_load(filePath, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-		VkDeviceSize imageSize = texWidth * texHeight * 4;
+		m_TexMipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
+		const VkDeviceSize imageSize = texWidth * texHeight * 4;
 
 		if (!pixels) {
 			throw std::runtime_error("failed to load texture image!");
@@ -1763,22 +1867,25 @@ private:
 
 		stbi_image_free(pixels);
 
-		createImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_TextureImage, m_TextureImageMemory);
+		createImage2D(texWidth, texHeight, m_TexMipLevels, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_TextureImage, m_TextureImageMemory);
 
 		// Transition image to a state for data to get INTO it
-		transitionImageLayout(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		transitionImageLayout(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, m_TexMipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 		// Copy Buffer to that image
 		copyBufferToImage(stagingBuffer, m_TextureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
 		// Transition Image to a state for it to be read in shader
-		transitionImageLayout(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		// Commented out for generating mips:
+		// transitionImageLayout(m_TextureImage,  VK_FORMAT_R8G8B8A8_SRGB, 1, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+		generateMipmaps(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, m_TexMipLevels);
 
 		vkDestroyBuffer(m_Device, stagingBuffer, nullptr);
 		vkFreeMemory(m_Device, stagingBufferMemory, nullptr);
 	}
 
-	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectMask) {
+	VkImageView createImageView(VkImage image, uint32_t mipLevels, VkFormat format, VkImageAspectFlags aspectMask) {
 		VkImageViewCreateInfo viewInfo{};
 		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		viewInfo.image = image;
@@ -1786,7 +1893,7 @@ private:
 		viewInfo.format = format;
 		viewInfo.subresourceRange.aspectMask = aspectMask;
 		viewInfo.subresourceRange.baseMipLevel = 0;
-		viewInfo.subresourceRange.levelCount = 1;
+		viewInfo.subresourceRange.levelCount = mipLevels;
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		viewInfo.subresourceRange.layerCount = 1;
 
@@ -1800,7 +1907,7 @@ private:
 
 	void createTextureImageView()
 	{
-		m_TextureImageView = createImageView(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+		m_TextureImageView = createImageView(m_TextureImage, m_TexMipLevels, VK_FORMAT_R8G8B8A8_SRGB,  VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 
 	void createTextureSampler()
@@ -1821,10 +1928,11 @@ private:
 		samplerInfo.unnormalizedCoordinates = VK_FALSE;
 		samplerInfo.compareEnable = VK_FALSE;
 		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+
 		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerInfo.mipLodBias = 0.0f;
-		samplerInfo.minLod = 0.0f;
-		samplerInfo.maxLod = 0.0f;
+		samplerInfo.minLod = static_cast<float>(0);
+		samplerInfo.maxLod = static_cast<float>(m_TexMipLevels);
+		samplerInfo.mipLodBias = 0.0f; // Optional
 
 		if (vkCreateSampler(m_Device, &samplerInfo, nullptr, &m_TextureSampler) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create texture sampler!");
@@ -1863,9 +1971,9 @@ private:
 	{
 		const VkFormat depthFormat = findDepthFormat();
 
-		createImage(m_SwapChainExtent.width, m_SwapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthImage, m_DepthImageMemory);
+		createImage2D(m_SwapChainExtent.width, m_SwapChainExtent.height, 1, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthImage, m_DepthImageMemory);
 
-		m_DepthImageView = createImageView(m_DepthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+		m_DepthImageView = createImageView(m_DepthImage, 1, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 	}
 
 	void InitVulkan() {
@@ -2120,7 +2228,6 @@ private:
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
-
 			vkDestroyBuffer(m_Device, m_UniformBuffers[i], nullptr);
 			vkFreeMemory(m_Device, m_UniformBuffersMemory[i], nullptr);
 
@@ -2128,6 +2235,8 @@ private:
 			vkDestroySemaphore(m_Device, m_RenderFinishedSemaphore[i], nullptr);
 			vkDestroyFence(m_Device, m_InFlightFence[i], nullptr);
 		}
+
+
 
 		vkDestroySampler(m_Device, m_TextureSampler, nullptr);
 		vkDestroyImageView(m_Device, m_TextureImageView, nullptr);
@@ -2253,6 +2362,7 @@ private:
 	std::vector<void*> m_UniformBuffersMapped;
 
 	// Textures
+	uint32_t m_TexMipLevels = 0;
 	VkImage m_TextureImage = VK_NULL_HANDLE;
 	VkDeviceMemory m_TextureImageMemory = VK_NULL_HANDLE;
 	VkImageView m_TextureImageView = VK_NULL_HANDLE;

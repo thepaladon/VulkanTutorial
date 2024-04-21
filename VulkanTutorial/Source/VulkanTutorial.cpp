@@ -2099,7 +2099,7 @@ private:
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * 2);
+		poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 2;
 
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -2174,6 +2174,38 @@ private:
 
 	}
 
+	void createComputePipeline()
+	{
+		const auto computeShaderCode = readFile("Shaders/Compiled/particle.spv");
+		m_ParticleShaderModule = createShaderModule(computeShaderCode);
+
+		VkPipelineShaderStageCreateInfo computeShaderStageInfo{};
+		computeShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		computeShaderStageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		computeShaderStageInfo.module = m_ParticleShaderModule;
+		computeShaderStageInfo.pName = "main";
+
+		
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.pSetLayouts = &m_ComputeDescriptorSetLayout;
+
+		if (vkCreatePipelineLayout(m_Device, &pipelineLayoutInfo, nullptr, &m_ComputePipelineLayout) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create compute pipeline layout!");
+		}
+
+		VkComputePipelineCreateInfo pipelineInfo{};
+		pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipelineInfo.layout = m_ComputePipelineLayout;
+		pipelineInfo.stage = computeShaderStageInfo;
+
+		if (vkCreateComputePipelines(m_Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_ComputePipeline) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create compute pipeline!");
+		}
+
+	}
+
 	void InitVulkan() {
 
 		// ToDo: Fix this madness...
@@ -2212,6 +2244,7 @@ private:
 		createComputeDescriptorSetup();
 		createComputeDescriptorPool();
 		createComputeDescriptorSets();
+		createComputePipeline();
 
 		createCommandBuffer();
 		createSyncObjects();
@@ -2467,10 +2500,14 @@ private:
 
 		vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
 
+		vkDestroyPipeline(m_Device, m_ComputePipeline, nullptr);
+		vkDestroyPipelineLayout(m_Device, m_ComputePipelineLayout, nullptr);
+
 		vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
 		vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
 		vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
 
+		vkDestroyShaderModule(m_Device, m_ParticleShaderModule, nullptr);
 		vkDestroyShaderModule(m_Device, m_VertShaderModule, nullptr);
 		vkDestroyShaderModule(m_Device, m_FragShaderModule, nullptr);
 
@@ -2591,6 +2628,11 @@ private:
 	VkDescriptorSetLayout m_ComputeDescriptorSetLayout = VK_NULL_HANDLE;
 	VkDescriptorPool m_ComputeDescPool = VK_NULL_HANDLE;
 	std::vector<VkDescriptorSet> m_ComputeDescriptorSets;
+
+	VkShaderModule m_ParticleShaderModule = VK_NULL_HANDLE;
+	VkPipelineLayout m_ComputePipelineLayout = VK_NULL_HANDLE;
+	VkPipeline m_ComputePipeline = VK_NULL_HANDLE;
+
 
 	// Uniform Buffers Dt
 	std::vector<VkBuffer> m_DtBuffers;

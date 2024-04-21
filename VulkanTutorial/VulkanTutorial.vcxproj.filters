@@ -378,5 +378,8 @@
     <None Include="..\Dependencies\Include\assimp\vector3.inl">
       <Filter>Header Files\Assimp</Filter>
     </None>
+    <None Include="..\Shaders\particle.comp">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

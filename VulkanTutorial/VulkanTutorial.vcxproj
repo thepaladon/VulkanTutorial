@@ -146,6 +146,7 @@
     <None Include="..\Dependencies\Include\assimp\vector2.inl" />
     <None Include="..\Dependencies\Include\assimp\vector3.inl" />
     <None Include="..\Shaders\compile.bat" />
+    <None Include="..\Shaders\particle.comp" />
     <None Include="..\Shaders\shader.frag" />
     <None Include="..\Shaders\shader.vert" />
   </ItemGroup>

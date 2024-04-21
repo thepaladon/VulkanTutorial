@@ -37,6 +37,8 @@
 #include "FreeCamera.h"
 
 #define STB_IMAGE_IMPLEMENTATION
+#include <random>
+
 #include "stb/stb_image.h"
 
 #include <assimp/Importer.hpp>
@@ -170,6 +172,16 @@ std::vector<VkDynamicState> g_dynamicStatesOps = {
 	VK_DYNAMIC_STATE_VIEWPORT,
 	VK_DYNAMIC_STATE_SCISSOR
 };
+
+
+#define PARTICLE_COUNT 100000
+struct Particle {
+	glm::vec2 position;
+	glm::vec2 velocity;
+	glm::vec4 color;
+};
+
+
 
 struct Vertex {
 	glm::vec3 pos;
@@ -676,9 +688,10 @@ private:
 		//Similar to Rust's "Option"?
 		std::optional<uint32_t> graphicsFamily;
 		std::optional<uint32_t> presentFamily;
+		std::optional<uint32_t> graphicsAndComputeFamily;
 
 		bool isComplete() {
-			return graphicsFamily.has_value() && presentFamily.has_value();
+			return graphicsFamily.has_value() && presentFamily.has_value() && graphicsAndComputeFamily.has_value();
 		}
 
 	};
@@ -694,6 +707,10 @@ private:
 
 		int i = 0;
 		for (const auto& queueFamily : queueFamilies) {
+			if ((queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) && (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
+				indices.graphicsAndComputeFamily = i;
+			}
+
 			//Querying whether the queue family is a queue family supports graphics operations
 			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 				indices.graphicsFamily = i;
@@ -774,6 +791,8 @@ private:
 		createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
 		vkGetDeviceQueue(m_Device, indices.presentFamily.value(), 0, &m_PresentQueue);
+
+		vkGetDeviceQueue(m_Device, indices.graphicsAndComputeFamily.value(), 0, &m_ComputeQueue);
 	}
 
 
@@ -1285,6 +1304,7 @@ private:
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		allocInfo.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
 
+		
 		if (vkAllocateCommandBuffers(m_Device, &allocInfo, m_CommandBuffer) != VK_SUCCESS) {
 			throw std::runtime_error("failed to allocate command buffers!");
 		}
@@ -1976,6 +1996,50 @@ private:
 		m_DepthImageView = createImageView(m_DepthImage, 1, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 	}
 
+	void createShaderStorageBuffers()
+	{
+		m_ShaderStorageBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+		m_ShaderStorageBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+
+		// Initialize particles
+		std::default_random_engine rndEngine((unsigned)time(nullptr));
+		std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
+
+		// Initial particle positions on a circle
+		std::vector<Particle> particles(PARTICLE_COUNT);
+		for (auto& particle : particles) {
+			const float r = 0.25f * sqrt(rndDist(rndEngine));
+			const float theta = rndDist(rndEngine) * 2.f * glm::pi<float>();
+			const float x = r * cos(theta) * HEIGHT / WIDTH;
+			const float y = r * sin(theta);
+			particle.position = glm::vec2(x, y);
+			particle.velocity = glm::normalize(glm::vec2(x, y)) * 0.00025f;
+			particle.color = glm::vec4(rndDist(rndEngine), rndDist(rndEngine), rndDist(rndEngine), 1.0f);
+		}
+
+		constexpr VkDeviceSize bufferSize = sizeof(Particle) * PARTICLE_COUNT;
+
+		// Not the "VK_BUFFER_USAGE_STORAGE_BUFFER_BIT" flag to write to it
+		VkBuffer stagingBuffer;
+		VkDeviceMemory stagingBufferMemory;
+		createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+		void* data;
+		vkMapMemory(m_Device, stagingBufferMemory, 0, bufferSize, 0, &data);
+		memcpy(data, particles.data(), (size_t)bufferSize);
+		vkUnmapMemory(m_Device, stagingBufferMemory);
+
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+			createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_ShaderStorageBuffers[i], m_ShaderStorageBuffersMemory[i]);
+			// Copy data from the staging buffer (host) to the shader storage buffer (GPU)
+			copyBuffer(stagingBuffer, m_ShaderStorageBuffers[i], bufferSize);
+		}
+
+
+		vkDestroyBuffer(m_Device, stagingBuffer, nullptr);
+		vkFreeMemory(m_Device, stagingBufferMemory, nullptr);
+	}
+
 	void InitVulkan() {
 
 		// ToDo: Fix this madness...
@@ -2007,6 +2071,10 @@ private:
 
 		createVertexBuffer();
 		createIndexBuffer();
+
+		// Compute Stuff
+		createShaderStorageBuffers();
+
 		createCommandBuffer();
 		createSyncObjects();
 
@@ -2234,8 +2302,10 @@ private:
 			vkDestroySemaphore(m_Device, m_ImageAvailableSemaphore[i], nullptr);
 			vkDestroySemaphore(m_Device, m_RenderFinishedSemaphore[i], nullptr);
 			vkDestroyFence(m_Device, m_InFlightFence[i], nullptr);
-		}
 
+			vkDestroyBuffer(m_Device, m_ShaderStorageBuffers[i], nullptr);
+			vkFreeMemory(m_Device, m_ShaderStorageBuffersMemory[i], nullptr);
+		}
 
 
 		vkDestroySampler(m_Device, m_TextureSampler, nullptr);
@@ -2310,6 +2380,7 @@ private:
 	// Automatically created with the Logical Device
 	VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
 	VkQueue m_PresentQueue = VK_NULL_HANDLE;
+	VkQueue m_ComputeQueue = VK_NULL_HANDLE; // Compute AND Graphics
 
 	VkSwapchainKHR m_SwapChain = VK_NULL_HANDLE;
 	VkFormat m_SwapChainImageFormat;        // Gotten from Swap-chain
@@ -2321,9 +2392,9 @@ private:
 	std::vector<VkFramebuffer> m_SwapChainFramebuffers;
 
 	// Depth
-	VkImage m_DepthImage;
-	VkDeviceMemory m_DepthImageMemory;
-	VkImageView m_DepthImageView;
+	VkImage m_DepthImage = VK_NULL_HANDLE;
+	VkDeviceMemory m_DepthImageMemory = VK_NULL_HANDLE;
+	VkImageView m_DepthImageView = VK_NULL_HANDLE;
 
 	// Sync
 	VkSemaphore m_ImageAvailableSemaphore[MAX_FRAMES_IN_FLIGHT] = {};
@@ -2367,6 +2438,11 @@ private:
 	VkDeviceMemory m_TextureImageMemory = VK_NULL_HANDLE;
 	VkImageView m_TextureImageView = VK_NULL_HANDLE;
 	VkSampler m_TextureSampler = VK_NULL_HANDLE;
+
+	// Compute Stuff
+	std::vector<VkBuffer> m_ShaderStorageBuffers;
+	std::vector<VkDeviceMemory> m_ShaderStorageBuffersMemory;
+
 
 	//Screen
 	VkSurfaceKHR m_Surface = VK_NULL_HANDLE;

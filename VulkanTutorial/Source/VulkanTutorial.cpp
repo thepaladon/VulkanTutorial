@@ -226,7 +226,6 @@ struct UniformBufferObject {
 	glm::mat4 proj;
 };
 
-
 const std::vector<Vertex> g_vertices = {
 	{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
 	{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
@@ -1546,6 +1545,28 @@ private:
 		}
 	}
 
+	void createDtBuffers() {
+
+		VkDeviceSize bufferSize = sizeof(float);
+
+		VkPhysicalDeviceProperties properties{};
+		vkGetPhysicalDeviceProperties(m_PhysicalDevice, &properties);
+
+		// Alignment requirements could force a larger allocation:
+		const VkDeviceSize minUboAlignment = properties.limits.minMemoryMapAlignment;
+		bufferSize = (bufferSize + minUboAlignment - 1) & ~(minUboAlignment - 1);
+
+		m_DtBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+		m_DtBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+		m_DtBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
+
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+			
+			createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_DtBuffers[i], m_DtBuffersMemory[i]);
+
+			vkMapMemory(m_Device, m_DtBuffersMemory[i], 0, bufferSize, 0, &m_DtBuffersMapped[i]);
+		}
+	}
 
 	void createDescriptorSetLayout()
 	{
@@ -2040,6 +2061,119 @@ private:
 		vkFreeMemory(m_Device, stagingBufferMemory, nullptr);
 	}
 
+	void createComputeDescriptorSetup()
+	{
+		std::array<VkDescriptorSetLayoutBinding, 3> layoutBindings{};
+		layoutBindings[0].binding = 0;
+		layoutBindings[0].descriptorCount = 1;
+		layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		layoutBindings[0].pImmutableSamplers = nullptr;
+		layoutBindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+		layoutBindings[1].binding = 1;
+		layoutBindings[1].descriptorCount = 1;
+		layoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		layoutBindings[1].pImmutableSamplers = nullptr;
+		layoutBindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+		layoutBindings[2].binding = 2;
+		layoutBindings[2].descriptorCount = 1;
+		layoutBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		layoutBindings[2].pImmutableSamplers = nullptr;
+		layoutBindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+		VkDescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layoutInfo.bindingCount = 3;
+		layoutInfo.pBindings = layoutBindings.data();
+
+		if (vkCreateDescriptorSetLayout(m_Device, &layoutInfo, nullptr, &m_ComputeDescriptorSetLayout) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create compute descriptor set layout!");
+		}
+
+	}
+
+	void createComputeDescriptorPool()
+	{
+		std::array<VkDescriptorPoolSize, 2> poolSizes{};
+		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * 2);
+
+		VkDescriptorPoolCreateInfo poolInfo{};
+		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+		poolInfo.pPoolSizes = poolSizes.data();
+		poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
+
+		if (vkCreateDescriptorPool(m_Device, &poolInfo, nullptr, &m_ComputeDescPool) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create descriptor pool!");
+		}
+	}
+
+	void createComputeDescriptorSets(){
+
+		const std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, m_ComputeDescriptorSetLayout);
+
+		VkDescriptorSetAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocInfo.descriptorPool = m_ComputeDescPool;
+		allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		allocInfo.pSetLayouts = layouts.data();
+
+		m_ComputeDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+		if (vkAllocateDescriptorSets(m_Device, &allocInfo, m_ComputeDescriptorSets.data()) != VK_SUCCESS) {
+			throw std::runtime_error("failed to allocate compute descriptor sets!");
+		}
+
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+			VkDescriptorBufferInfo uniformBufferInfo{};
+			uniformBufferInfo.buffer = m_DtBuffers[i]; //deltaTime
+			uniformBufferInfo.offset = 0;
+			uniformBufferInfo.range = sizeof(float);
+
+			std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
+			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[0].dstSet = m_ComputeDescriptorSets[i];
+			descriptorWrites[0].dstBinding = 0;
+			descriptorWrites[0].dstArrayElement = 0;
+			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrites[0].descriptorCount = 1;
+			descriptorWrites[0].pBufferInfo = &uniformBufferInfo;
+
+			VkDescriptorBufferInfo storageBufferInfoLastFrame{};
+			storageBufferInfoLastFrame.buffer = m_ShaderStorageBuffers[(i - 1) % MAX_FRAMES_IN_FLIGHT];
+			storageBufferInfoLastFrame.offset = 0;
+			storageBufferInfoLastFrame.range = sizeof(Particle) * PARTICLE_COUNT;
+
+			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[1].dstSet = m_ComputeDescriptorSets[i];
+			descriptorWrites[1].dstBinding = 1;
+			descriptorWrites[1].dstArrayElement = 0;
+			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[1].descriptorCount = 1;
+			descriptorWrites[1].pBufferInfo = &storageBufferInfoLastFrame;
+
+			VkDescriptorBufferInfo storageBufferInfoCurrentFrame{};
+			storageBufferInfoCurrentFrame.buffer = m_ShaderStorageBuffers[i];
+			storageBufferInfoCurrentFrame.offset = 0;
+			storageBufferInfoCurrentFrame.range = sizeof(Particle) * PARTICLE_COUNT;
+
+			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[2].dstSet = m_ComputeDescriptorSets[i];
+			descriptorWrites[2].dstBinding = 2;
+			descriptorWrites[2].dstArrayElement = 0;
+			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[2].descriptorCount = 1;
+			descriptorWrites[2].pBufferInfo = &storageBufferInfoCurrentFrame;
+
+			vkUpdateDescriptorSets(m_Device, 3, descriptorWrites.data(), 0, nullptr);
+		}
+
+	}
+
 	void InitVulkan() {
 
 		// ToDo: Fix this madness...
@@ -2055,6 +2189,8 @@ private:
 		createCommandPool();
 
 		createUniformBuffers();
+		createDtBuffers();
+
 		createTextureImage();
 		createTextureImageView();
 		createTextureSampler();
@@ -2062,18 +2198,20 @@ private:
 		createDescriptorSetLayout();
 		createDescriptorPool();
 		createDescriptorSets();
+
 		createGraphicsPipeline();
 		createRenderPass();
 		createDepthResources();
 		createFramebuffers();
-
-
 
 		createVertexBuffer();
 		createIndexBuffer();
 
 		// Compute Stuff
 		createShaderStorageBuffers();
+		createComputeDescriptorSetup();
+		createComputeDescriptorPool();
+		createComputeDescriptorSets();
 
 		createCommandBuffer();
 		createSyncObjects();
@@ -2097,6 +2235,9 @@ private:
 		memcpy(m_UniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 	}
 
+	void updateDtBuffer(uint32_t currentImage, float dt) {
+		memcpy(m_UniformBuffersMapped[currentImage], &dt, sizeof(float));
+	}
 
 	void drawFrame(double dt)
 	{
@@ -2294,6 +2435,9 @@ private:
 		vkDestroyDescriptorSetLayout(m_Device, m_DescSetLayout, nullptr);
 		vkDestroyDescriptorPool(m_Device, m_DescPool, nullptr);
 
+		vkDestroyDescriptorSetLayout(m_Device, m_ComputeDescriptorSetLayout, nullptr);
+		vkDestroyDescriptorPool(m_Device, m_ComputeDescPool, nullptr);
+
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
 			vkDestroyBuffer(m_Device, m_UniformBuffers[i], nullptr);
@@ -2305,6 +2449,8 @@ private:
 
 			vkDestroyBuffer(m_Device, m_ShaderStorageBuffers[i], nullptr);
 			vkFreeMemory(m_Device, m_ShaderStorageBuffersMemory[i], nullptr);
+			vkDestroyBuffer(m_Device, m_DtBuffers[i], nullptr);
+			vkFreeMemory(m_Device, m_DtBuffersMemory[i], nullptr);
 		}
 
 
@@ -2383,8 +2529,8 @@ private:
 	VkQueue m_ComputeQueue = VK_NULL_HANDLE; // Compute AND Graphics
 
 	VkSwapchainKHR m_SwapChain = VK_NULL_HANDLE;
-	VkFormat m_SwapChainImageFormat;        // Gotten from Swap-chain
-	VkExtent2D m_SwapChainExtent;           // Gotten from Swap-chain
+	VkFormat m_SwapChainImageFormat = {};   // Gotten from Swap-chain
+	VkExtent2D m_SwapChainExtent = {};      // Gotten from Swap-chain
 	std::vector<VkImage> m_SwapChainImages; // Gotten from Swap-chain
 
 	// Describes everything in the image: 2D/3D, mipmaps, depth buffer(?) etc.
@@ -2440,9 +2586,16 @@ private:
 	VkSampler m_TextureSampler = VK_NULL_HANDLE;
 
 	// Compute Stuff
-	std::vector<VkBuffer> m_ShaderStorageBuffers;
-	std::vector<VkDeviceMemory> m_ShaderStorageBuffersMemory;
+	std::vector<VkBuffer> m_ShaderStorageBuffers = {};
+	std::vector<VkDeviceMemory> m_ShaderStorageBuffersMemory = {};
+	VkDescriptorSetLayout m_ComputeDescriptorSetLayout = VK_NULL_HANDLE;
+	VkDescriptorPool m_ComputeDescPool = VK_NULL_HANDLE;
+	std::vector<VkDescriptorSet> m_ComputeDescriptorSets;
 
+	// Uniform Buffers Dt
+	std::vector<VkBuffer> m_DtBuffers;
+	std::vector<VkDeviceMemory> m_DtBuffersMemory;
+	std::vector<void*> m_DtBuffersMapped;
 
 	//Screen
 	VkSurfaceKHR m_Surface = VK_NULL_HANDLE;

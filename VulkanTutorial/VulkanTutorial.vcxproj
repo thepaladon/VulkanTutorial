@@ -324,10 +324,11 @@
       <Outputs>$(SolutionDir)Shaders\Compiled\*.spv</Outputs>
     </CustomBuildStep>
     <PostBuildEvent>
-      <Command>xcopy /E /I /Y "D:\e-repo\VulkanTutorial\Shaders\Compiled" "$(TargetDir)Shaders\Compiled"</Command>
+      <Command>xcopy /E /I /Y "$(SolutionDir)Shaders\Compiled" "$(TargetDir)Shaders\Compiled"
+xcopy /E /I /Y "$(SolutionDir)Resources" "$(TargetDir)Resources"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
-      <Message>Copy the shaders to Build folder</Message>
+      <Message>Copy the shaders and resources to Build folder</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Test|x64'">
@@ -368,10 +369,11 @@
       <Outputs>$(SolutionDir)Shaders\Compiled\*.spv</Outputs>
     </CustomBuildStep>
     <PostBuildEvent>
-      <Command>xcopy /E /I /Y "D:\e-repo\VulkanTutorial\Shaders\Compiled" "$(TargetDir)Shaders\Compiled"</Command>
+      <Command>xcopy /E /I /Y "$(SolutionDir)Shaders\Compiled" "$(TargetDir)Shaders\Compiled"
+xcopy /E /I /Y "$(SolutionDir)Resources" "$(TargetDir)Resources"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
-      <Message>Copy the shaders to Build folder</Message>
+      <Message>Copy the shaders and resources to Build folder</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -410,10 +412,11 @@
       <Outputs>$(SolutionDir)Shaders\Compiled\*.spv</Outputs>
     </CustomBuildStep>
     <PostBuildEvent>
-      <Command>xcopy /E /I /Y "D:\e-repo\VulkanTutorial\Shaders\Compiled" "$(TargetDir)Shaders\Compiled"</Command>
+      <Command>xcopy /E /I /Y "$(SolutionDir)Shaders\Compiled" "$(TargetDir)Shaders\Compiled"
+xcopy /E /I /Y "$(SolutionDir)Resources" "$(TargetDir)Resources"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
-      <Message>Copy the shaders to Build folder</Message>
+      <Message>Copy the shaders and resources to Build folder</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

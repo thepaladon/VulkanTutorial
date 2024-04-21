@@ -888,29 +888,9 @@ private:
 	void createImageViews() {
 		m_SwapChainImageViews.resize(m_SwapChainImages.size());
 
-		for (size_t i = 0; i < m_SwapChainImages.size(); i++) {
-			VkImageViewCreateInfo createInfo{};
-			createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			createInfo.image = m_SwapChainImages[i];
-			createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			createInfo.format = m_SwapChainImageFormat;
-			createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-			createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-			createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-			createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-			createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			createInfo.subresourceRange.baseMipLevel = 0;
-			createInfo.subresourceRange.levelCount = 1;
-			createInfo.subresourceRange.baseArrayLayer = 0;
-			createInfo.subresourceRange.layerCount = 1;
-
-			if (vkCreateImageView(m_Device, &createInfo, nullptr, &m_SwapChainImageViews[i]) != VK_SUCCESS) {
-				throw std::runtime_error("failed to create image views!");
-			}
-
-
+		for (uint32_t i = 0; i < m_SwapChainImages.size(); i++) {
+			m_SwapChainImageViews[i] = createImageView(m_SwapChainImages[i], m_SwapChainImageFormat);
 		}
-
 	}
 
 	VkShaderModule createShaderModule(const std::vector<char>& code) {
@@ -1706,6 +1686,33 @@ private:
 		vkFreeMemory(m_Device, stagingBufferMemory, nullptr);
 	}
 
+	VkImageView createImageView(VkImage image, VkFormat format) {
+		VkImageViewCreateInfo viewInfo{};
+		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewInfo.image = image;
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.format = format;
+		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewInfo.subresourceRange.baseMipLevel = 0;
+		viewInfo.subresourceRange.levelCount = 1;
+		viewInfo.subresourceRange.baseArrayLayer = 0;
+		viewInfo.subresourceRange.layerCount = 1;
+
+		VkImageView imageView;
+		if (vkCreateImageView(m_Device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create texture image view!");
+		}
+
+		return imageView;
+	}
+
+
+	void createTextureImageView()
+	{
+
+		m_TextureImageView = createImageView(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB);
+	}
+
 	void InitVulkan() {
 
 		// ToDo: Fix this madness...
@@ -1725,6 +1732,7 @@ private:
 		createFramebuffers();
 		createCommandPool();
 		createTextureImage();
+		createTextureImageView();
 		createVertexBuffer();
 		createIndexBuffer();
 		createCommandBuffer();
@@ -1957,6 +1965,7 @@ private:
 			vkDestroyFence(m_Device, m_InFlightFence[i], nullptr);
 		}
 
+		vkDestroyImageView(m_Device, m_TextureImageView, nullptr);
 		vkDestroyImage(m_Device, m_TextureImage, nullptr);
 		vkFreeMemory(m_Device, m_TextureImageMemory, nullptr);
 
@@ -2047,7 +2056,7 @@ private:
 	VkShaderModule m_FragShaderModule = VK_NULL_HANDLE;
 
 	// Pipeline and Render Pass Setup
-	VkPipelineShaderStageCreateInfo m_ShaderStages[2];
+	VkPipelineShaderStageCreateInfo m_ShaderStages[2] = {};
 	FixedFunctionStagesInfo m_FixedFuncStages;
 
 	// Pipeline
@@ -2074,12 +2083,12 @@ private:
 	std::vector<void*> m_UniformBuffersMapped;
 
 	// Textures
-	VkImage m_TextureImage;
-	VkDeviceMemory m_TextureImageMemory;
-
+	VkImage m_TextureImage = VK_NULL_HANDLE;
+	VkDeviceMemory m_TextureImageMemory = VK_NULL_HANDLE;
+	VkImageView m_TextureImageView = VK_NULL_HANDLE;
 
 	//Screen
-	VkSurfaceKHR m_Surface;
+	VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
 
 	// Vulkan Debug
 	VkDebugUtilsMessengerEXT m_DebugMessenger = VK_NULL_HANDLE;

@@ -14,6 +14,8 @@ This personal project serves as my introduction to the **Vulkan API** and its fe
 
 **My secondary goal**  is to learn how to use it well enough to be able to write a Vulkan back-end of my current ["On The Bubble"](https://store.steampowered.com/app/2707350/On_the_Bubble/) university project. The back-end of that project is hardware ray tracing and compute oriented since the renderer is entirely path-traced.
 
+I might do some bigger things with this or I might not. For now, I'm taking it one step at a time toward the goals I've listed above. 
+
 ## Features
 - Basic Vertex + Fragment Shader
 - Basic Compute Shader for Particles

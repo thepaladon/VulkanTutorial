@@ -70,6 +70,9 @@ const std::vector<const char*> deviceExtensions = {
 	VK_KHR_RAY_QUERY_EXTENSION_NAME,
 };
 
+// Break the program at the start of the new frame if an issue has been found
+static bool g_errorValidationLayerTriggered = false;
+
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
 #else
@@ -159,6 +162,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	// Message about behavior that is invalid and may cause crashes
 	if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
 		VK_LOG_ERROR("%s", pCallbackData->pMessage);
+		g_errorValidationLayerTriggered = true;
 	}
 
 	return VK_FALSE;
@@ -1484,12 +1488,6 @@ private:
 
 		vkCmdEndRenderPass(commandBuffer);
 
-
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline);
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipelineLayout, 0, 1, &m_ComputeDescriptorSets[currentFrame], 0, 0);
-		vkCmdDispatch(commandBuffer, PARTICLE_COUNT / 256, 1, 1);
-
-
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 			throw std::runtime_error("failed to record command buffer!");
 		}
@@ -2567,6 +2565,11 @@ private:
 
 			glfwPollEvents();
 
+			if(g_errorValidationLayerTriggered)
+			{
+				LOG_ERROR("Validation layer error(s) detected");
+				assert(false);
+			}
 
 			// Only draw if the window is not minimized
 			if (glfwGetWindowAttrib(m_Window, GLFW_ICONIFIED) != GLFW_TRUE) {

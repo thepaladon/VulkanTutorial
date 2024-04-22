@@ -27,5 +27,5 @@ private:
 
 	// For movement
 	float m_ViewScalar = 2.0f;
-	float m_MoveScalar = 150.0f;
+	float m_MoveScalar = 10.0f;
 };

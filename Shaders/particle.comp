@@ -5,16 +5,16 @@ layout (binding = 0) uniform ParameterUBO {
 } ubo;
 
 struct Particle {
-    vec2 position;
-    vec2 velocity;
-    vec4 color;
+    vec3 position;
+	vec3 color;
+	vec3 velocity;
 };
 
-layout(std140, binding = 1) readonly buffer ParticleSSBOIn {
+layout(std140 , binding = 1) readonly buffer ParticleSSBOIn {
    Particle particlesIn[ ];
 };
 
-layout(std140, binding = 2) buffer ParticleSSBOOut {
+layout(std140 , binding = 2) buffer ParticleSSBOOut {
    Particle particlesOut[ ];
 };
 
@@ -26,6 +26,6 @@ void main()
 
     Particle particleIn = particlesIn[index];
 
-    particlesOut[index].position = particleIn.position + particleIn.velocity.xy * ubo.deltaTime;
+    particlesOut[index].position = particleIn.position + vec3(0.0001, 0.0, 0.0);
     particlesOut[index].velocity = particleIn.velocity;
 }

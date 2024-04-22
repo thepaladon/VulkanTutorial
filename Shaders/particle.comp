@@ -26,6 +26,6 @@ void main()
 
     Particle particleIn = particlesIn[index];
 
-    particlesOut[index].position = particleIn.position + vec3(0.0001, 0.0, 0.0);
+    particlesOut[index].position = particleIn.position + particleIn.velocity * ubo.deltaTime;
     particlesOut[index].velocity = particleIn.velocity;
 }

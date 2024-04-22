@@ -19,7 +19,7 @@ public:
 private:
 
 	float m_NearPlane = 0.01f;
-	float m_FarPlane = 1000.f;
+	float m_FarPlane = 100000.f;
 	float m_FOV = 50.0f;
 
 	glm::vec3 m_ImagePlanePos; //unused, later for rt

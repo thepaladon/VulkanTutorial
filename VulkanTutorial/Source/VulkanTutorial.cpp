@@ -174,7 +174,7 @@ std::vector<VkDynamicState> g_dynamicStatesOps = {
 };
 
 
-constexpr int PARTICLE_COUNT = (1000 * 256);
+constexpr int PARTICLE_COUNT = (5000 * 256);
 struct Particle {
 	glm::vec3 position;
 	float pad0;
@@ -2148,17 +2148,17 @@ private:
 			float phi = acos(2.0f * rndDist(rndEngine) - 1.0f);  // phi angle
 			float theta = rndDist(rndEngine) * 2.0f * glm::pi<float>();  // theta angle
 
-			constexpr float RADIUS = 1.0f;        // Radius of the sphere
+			constexpr float RADIUS = .5f;        // Radius of the sphere
 			// Conversion to Cartesian coordinates
 			float x = RADIUS * sin(phi) * cos(theta);
 			float y = RADIUS * sin(phi) * sin(theta);
 			float z = RADIUS * cos(phi);
-			particle.position = glm::vec3(rndDist(rndEngine), rndDist(rndEngine), rndDist(rndEngine));
+			particle.position = glm::vec3(x, y, z) * glm::vec3(rndDist(rndEngine));
 
 			// Velocity outward from the center
-			glm::vec3 direction = glm::vec3(0.0, 0.0, 0.0); // Normalize to get the direction
-			float initialSpeed = 0.0001f;  // Modify this value to adjust the initial speed
-			particle.velocity = glm::vec3(0.0, 0.0, 0.0);
+			glm::vec3 direction = (particle.position); // Normalize to get the direction
+			constexpr float initialSpeed = 0.01f;  // Modify this value to adjust the initial speed
+			particle.velocity = direction * initialSpeed;
 
 			// Random color for each particle
 			particle.color = glm::vec3(rndDist(rndEngine), rndDist(rndEngine), rndDist(rndEngine));

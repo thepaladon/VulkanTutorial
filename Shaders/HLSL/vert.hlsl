@@ -28,6 +28,6 @@ PSInput main(VSInput input) {
     output.pos = mul(proj, viewPosition);
     output.color = input.color;
     output.texCoord = input.texCoord;
-    output.pointSize = 1.0;
+    output.pointSize = 5.0;
     return output;
 }

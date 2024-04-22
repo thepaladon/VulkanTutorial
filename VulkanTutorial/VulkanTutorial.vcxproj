@@ -145,11 +145,11 @@
     <None Include="..\Dependencies\Include\assimp\SmoothingGroups.inl" />
     <None Include="..\Dependencies\Include\assimp\vector2.inl" />
     <None Include="..\Dependencies\Include\assimp\vector3.inl" />
-    <None Include="..\Shaders\compile.bat" />
+    <None Include="..\Shaders\GLSL\compileGLSL.bat" />
+    <None Include="..\Shaders\GLSL\particle.comp" />
+    <None Include="..\Shaders\GLSL\shader.frag" />
+    <None Include="..\Shaders\GLSL\shader.vert" />
     <None Include="..\Shaders\HLSL\compileHLSL.bat" />
-    <None Include="..\Shaders\particle.comp" />
-    <None Include="..\Shaders\shader.frag" />
-    <None Include="..\Shaders\shader.vert" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Shaders\HLSL\frag.hlsl">
@@ -329,7 +329,10 @@
       <Message>Copy the Assimp DLL</Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>call $(SolutionDir)Shaders\compile.bat</Command>
+      <Command>cd ..\Shaders\HLSL
+call $(SolutionDir)Shaders\HLSL\compileHLSL.bat
+cd ..\GLSL
+call $(SolutionDir)Shaders\GLSL\compileGLSL.bat</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Message>Compiling Shaders</Message>
@@ -374,7 +377,10 @@ xcopy /E /I /Y "$(SolutionDir)Resources" "$(TargetDir)Resources"</Command>
       <Message>Copy the Assimp DLL</Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>call $(SolutionDir)Shaders\compile.bat</Command>
+      <Command>cd ..\Shaders\HLSL
+call $(SolutionDir)Shaders\HLSL\compileHLSL.bat
+cd ..\GLSL
+call $(SolutionDir)Shaders\GLSL\compileGLSL.bat</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Message>Compiling Shaders</Message>
@@ -417,7 +423,10 @@ xcopy /E /I /Y "$(SolutionDir)Resources" "$(TargetDir)Resources"</Command>
       <Message>Copy the Assimp DLL</Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>call $(SolutionDir)Shaders\compile.bat</Command>
+      <Command>cd ..\Shaders\HLSL
+call $(SolutionDir)Shaders\HLSL\compileHLSL.bat
+cd ..\GLSL
+call $(SolutionDir)Shaders\GLSL\compileGLSL.bat</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Message>Compiling Shaders</Message>

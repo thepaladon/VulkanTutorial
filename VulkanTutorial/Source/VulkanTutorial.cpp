@@ -80,6 +80,14 @@ const bool enableValidationLayers = true;
 #endif
 
 
+//#define USE_HLSL 1
+#ifdef USE_HLSL
+const std::string shaderDir = "Shaders/Compiled/HLSL/";
+#else
+const std::string shaderDir = "Shaders/Compiled/GLSL/";
+#endif
+
+
 static std::vector<char> readFile(const std::string& filename) {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
@@ -1047,8 +1055,8 @@ private:
 
 	void createGraphicsPipeline()
 	{
-		const auto vertShaderCode = readFile("Shaders/Compiled/vert.spv");
-		const auto fragShaderCode = readFile("Shaders/Compiled/frag.spv");
+		const auto vertShaderCode = readFile(shaderDir + "vert.spv");
+		const auto fragShaderCode = readFile(shaderDir + "frag.spv");
 
 		m_VertShaderModule = createShaderModule(vertShaderCode);
 		m_FragShaderModule = createShaderModule(fragShaderCode);
@@ -2296,7 +2304,7 @@ private:
 
 	void createComputePipeline()
 	{
-		const auto computeShaderCode = readFile("Shaders/Compiled/particle.spv");
+		const auto computeShaderCode = readFile(shaderDir + "particle.spv");
 		m_ParticleShaderModule = createShaderModule(computeShaderCode);
 
 		VkPipelineShaderStageCreateInfo computeShaderStageInfo{};

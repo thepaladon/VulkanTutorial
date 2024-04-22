@@ -25,6 +25,12 @@
     <Filter Include="Header Files\stb">
       <UniqueIdentifier>{83d28156-8b59-4676-bbd2-9a605e913b45}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\HLSL">
+      <UniqueIdentifier>{bb57c794-0ae8-44ba-be99-a74e2918707c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\GLSL">
+      <UniqueIdentifier>{5dc7f038-3e70-41ce-ab03-6fa17b6fec6e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\ConsoleLogger.h">
@@ -343,15 +349,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Shaders\compile.bat">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\Shaders\shader.frag">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\Shaders\shader.vert">
-      <Filter>Resource Files</Filter>
-    </None>
     <None Include="..\Dependencies\Include\assimp\.editorconfig" />
     <None Include="..\Dependencies\Include\assimp\config.h.in" />
     <None Include="..\Dependencies\Include\assimp\color4.inl">
@@ -378,22 +375,29 @@
     <None Include="..\Dependencies\Include\assimp\vector3.inl">
       <Filter>Header Files\Assimp</Filter>
     </None>
-    <None Include="..\Shaders\particle.comp">
-      <Filter>Resource Files</Filter>
-    </None>
     <None Include="..\Shaders\HLSL\compileHLSL.bat">
-      <Filter>Resource Files</Filter>
+      <Filter>Resource Files\HLSL</Filter>
     </None>
-    <None Include="..\Shaders\HLSL\frag.hlsl">
-      <Filter>Resource Files</Filter>
+    <None Include="..\Shaders\HLSL\particle.hlsl">
+      <Filter>Resource Files\HLSL</Filter>
     </None>
     <None Include="..\Shaders\HLSL\vert.hlsl">
-      <Filter>Resource Files</Filter>
+      <Filter>Resource Files\HLSL</Filter>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="..\Shaders\HLSL\particle.hlsl">
-      <Filter>Resource Files</Filter>
-    </FxCompile>
+    <None Include="..\Shaders\HLSL\frag.hlsl">
+      <Filter>Resource Files\HLSL</Filter>
+    </None>
+    <None Include="..\Shaders\GLSL\compileGLSL.bat">
+      <Filter>Resource Files\GLSL</Filter>
+    </None>
+    <None Include="..\Shaders\GLSL\particle.comp">
+      <Filter>Resource Files\GLSL</Filter>
+    </None>
+    <None Include="..\Shaders\GLSL\shader.frag">
+      <Filter>Resource Files\GLSL</Filter>
+    </None>
+    <None Include="..\Shaders\GLSL\shader.vert">
+      <Filter>Resource Files\GLSL</Filter>
+    </None>
   </ItemGroup>
 </Project>

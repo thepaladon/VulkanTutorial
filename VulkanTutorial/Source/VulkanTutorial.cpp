@@ -174,13 +174,12 @@ std::vector<VkDynamicState> g_dynamicStatesOps = {
 };
 
 
-#define PARTICLE_COUNT 100000
+constexpr int PARTICLE_COUNT = (100000 * 256);
 struct Particle {
 	glm::vec2 position;
 	glm::vec2 velocity;
 	glm::vec4 color;
 };
-
 
 
 struct Vertex {
@@ -330,7 +329,7 @@ void EditTransform(FreeCamera& camera, glm::mat4* matrix)
 	auto view = camera.GetView();
 	auto proj = camera.GetProjection();
 
-	if(drawGizmo)
+	if (drawGizmo)
 		ImGuizmo::Manipulate(&view[0][0], &proj[0][0], mCurrentGizmoOperation, mCurrentGizmoMode, (float*)matrix, NULL, useSnap ? &snap.x : NULL);
 
 	auto t = glm::identity<glm::mat4>();
@@ -1303,12 +1302,23 @@ private:
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		allocInfo.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
 
-		
+
 		if (vkAllocateCommandBuffers(m_Device, &allocInfo, m_CommandBuffer) != VK_SUCCESS) {
 			throw std::runtime_error("failed to allocate command buffers!");
 		}
 
+		VkCommandBufferAllocateInfo compAllocInfo{};
+		compAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		compAllocInfo.commandPool = m_CommandPool;
+		compAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		compAllocInfo.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
+
+		if (vkAllocateCommandBuffers(m_Device, &compAllocInfo, m_ComputeCommandBuffer) != VK_SUCCESS) {
+			throw std::runtime_error("failed to allocate command buffers!");
+		}
+
 	}
+
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
 		VkCommandBufferBeginInfo beginInfo{};
@@ -1382,6 +1392,12 @@ private:
 
 		vkCmdEndRenderPass(commandBuffer);
 
+
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipelineLayout, 0, 1, &m_ComputeDescriptorSets[currentFrame], 0, 0);
+		vkCmdDispatch(commandBuffer, PARTICLE_COUNT / 256, 1, 1);
+
+
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 			throw std::runtime_error("failed to record command buffer!");
 		}
@@ -1403,7 +1419,14 @@ private:
 				vkCreateFence(m_Device, &fenceInfo, nullptr, &m_InFlightFence[i]) != VK_SUCCESS) {
 				throw std::runtime_error("failed to create semaphores!");
 			}
+
+			if (vkCreateSemaphore(m_Device, &semaphoreInfo, nullptr, &m_ComputeFinishedSemaphores[i]) != VK_SUCCESS ||
+				vkCreateFence(m_Device, &fenceInfo, nullptr, &m_ComputeInFlightFences[i]) != VK_SUCCESS) {
+				throw std::runtime_error("failed to create compute synchronization objects for a frame!");
+			}
 		}
+
+
 
 	}
 
@@ -1561,7 +1584,7 @@ private:
 		m_DtBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			
+
 			createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_DtBuffers[i], m_DtBuffersMemory[i]);
 
 			vkMapMemory(m_Device, m_DtBuffersMemory[i], 0, bufferSize, 0, &m_DtBuffersMapped[i]);
@@ -1948,7 +1971,7 @@ private:
 
 	void createTextureImageView()
 	{
-		m_TextureImageView = createImageView(m_TextureImage, m_TexMipLevels, VK_FORMAT_R8G8B8A8_SRGB,  VK_IMAGE_ASPECT_COLOR_BIT);
+		m_TextureImageView = createImageView(m_TextureImage, m_TexMipLevels, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 
 	void createTextureSampler()
@@ -2113,7 +2136,7 @@ private:
 		}
 	}
 
-	void createComputeDescriptorSets(){
+	void createComputeDescriptorSets() {
 
 		const std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, m_ComputeDescriptorSetLayout);
 
@@ -2185,7 +2208,7 @@ private:
 		computeShaderStageInfo.module = m_ParticleShaderModule;
 		computeShaderStageInfo.pName = "main";
 
-		
+
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = 1;
@@ -2269,12 +2292,58 @@ private:
 	}
 
 	void updateDtBuffer(uint32_t currentImage, float dt) {
-		memcpy(m_UniformBuffersMapped[currentImage], &dt, sizeof(float));
+		memcpy(m_DtBuffersMapped[currentImage], &dt, sizeof(float));
 	}
 
 	void drawFrame(double dt)
 	{
 		VkResult res = VK_SUCCESS;
+
+		const auto& compCommandBuffer = m_ComputeCommandBuffer[currentFrame];
+		const auto& computeFences = m_ComputeInFlightFences[currentFrame];
+		const auto& computeSemaph = m_ComputeFinishedSemaphores[currentFrame];
+
+		// Compute submission
+		vkWaitForFences(m_Device, 1, &computeFences, VK_TRUE, UINT64_MAX);
+
+		updateUniformBuffer(currentFrame, dt);
+		updateDtBuffer(currentFrame, (float)dt);
+
+		vkResetFences(m_Device, 1, &computeFences);
+
+		vkResetCommandBuffer(compCommandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = 0; // Optional
+		beginInfo.pInheritanceInfo = nullptr; // Optional
+
+		if (vkBeginCommandBuffer(compCommandBuffer, &beginInfo) != VK_SUCCESS) {
+			throw std::runtime_error("failed to begin recording command buffer!");
+		}
+
+		vkCmdBindPipeline(compCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline);
+		vkCmdBindDescriptorSets(compCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipelineLayout, 0, 1, &m_ComputeDescriptorSets[currentFrame], 0, 0);
+		vkCmdDispatch(compCommandBuffer, PARTICLE_COUNT / 256, 1, 1);
+
+		VkSubmitInfo compSubmitInfo{};
+		compSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		compSubmitInfo.commandBufferCount = 1;
+		compSubmitInfo.pCommandBuffers = &compCommandBuffer;
+		compSubmitInfo.signalSemaphoreCount = 1;
+		compSubmitInfo.pSignalSemaphores = &computeSemaph;
+
+		if (vkEndCommandBuffer(compCommandBuffer) != VK_SUCCESS) {
+			throw std::runtime_error("failed to record command buffer!");
+		}
+
+		if (vkQueueSubmit(m_ComputeQueue, 1, &compSubmitInfo, computeFences) != VK_SUCCESS) {
+			throw std::runtime_error("failed to submit compute command buffer!");
+		};
+
+
+		// Graphics submission
+		vkWaitForFences(m_Device, 1, &computeFences, VK_TRUE, UINT64_MAX);
+
 		const auto commandBuffer = m_CommandBuffer[currentFrame];
 		const auto imageAvailableS = m_ImageAvailableSemaphore[currentFrame];
 		const auto renderedS = m_RenderFinishedSemaphore[currentFrame];
@@ -2297,15 +2366,17 @@ private:
 		vkResetCommandBuffer(commandBuffer, 0);
 		recordCommandBuffer(commandBuffer, imageIndex);
 
-		updateUniformBuffer(currentFrame, dt);
-
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = &imageAvailableS;
-		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+		const VkSemaphore waitSemaphores[] = { computeSemaph, imageAvailableS };
+		const VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+		submitInfo.waitSemaphoreCount = static_cast<uint32_t>(std::size(waitSemaphores));
+		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = waitStages;
+
 
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &commandBuffer;
@@ -2394,43 +2465,45 @@ private:
 
 			glfwPollEvents();
 
-			ImGui_ImplVulkan_NewFrame();
-			ImGui_ImplGlfw_NewFrame();
-			ImGui::NewFrame();
-			ImGuizmo::BeginFrame();
-
-			ImGuiIO& io = ImGui::GetIO();
-			// Assuming the keys are mapped and captured through ImGui
-			const float forwardBackward = ((float)io.KeysDown['W'] - (float)io.KeysDown['S']); // W = 1, S = -1
-			const float leftRight = ((float)io.KeysDown['D'] - (float)io.KeysDown['A']); // D = 1, A = -1
-			const float upDown = ((float)io.KeysDown['R'] - (float)io.KeysDown['F']); // R = 1, F = -1
-
-			// Define the key codes for arrow keys
-			constexpr int keyLeft = GLFW_KEY_LEFT;
-			constexpr int keyRight = GLFW_KEY_RIGHT;
-			constexpr int keyUp = GLFW_KEY_UP;
-			constexpr int keyDown = GLFW_KEY_DOWN;
-
-			// Calculate horizontal and vertical movement
-			const float horizontal = ((float)io.KeysDown[keyRight] - (float)io.KeysDown[keyLeft]); // Right = 1, Left = -1
-			const float vertical = ((float)io.KeysDown[keyUp] - (float)io.KeysDown[keyDown]); // Up = 1, Down = -1
-
-			// Create the movement vector
-			const glm::vec2 moveVector(horizontal, vertical);
-			// Create and update the camera movement vector
-			const glm::vec3 cameraMoveVector(leftRight, upDown, forwardBackward);
-
-			camera.CameraInput((float)deltaTimeMs / 1000, cameraMoveVector, moveVector);
-			camera.UpdateCamera(io.DisplaySize.x, io.DisplaySize.y);
-
-			ImGui::Begin("Gizmo Transform");
-			EditTransform(camera, cubeModel.GetModelMatrixPtr());
-			ImGui::End();
-
-			ImGui::Render();
 
 			// Only draw if the window is not minimized
 			if (glfwGetWindowAttrib(m_Window, GLFW_ICONIFIED) != GLFW_TRUE) {
+
+				ImGui_ImplVulkan_NewFrame();
+				ImGui_ImplGlfw_NewFrame();
+				ImGui::NewFrame();
+				ImGuizmo::BeginFrame();
+
+				ImGuiIO& io = ImGui::GetIO();
+				// Assuming the keys are mapped and captured through ImGui
+				const float forwardBackward = ((float)io.KeysDown['W'] - (float)io.KeysDown['S']); // W = 1, S = -1
+				const float leftRight = ((float)io.KeysDown['D'] - (float)io.KeysDown['A']); // D = 1, A = -1
+				const float upDown = ((float)io.KeysDown['R'] - (float)io.KeysDown['F']); // R = 1, F = -1
+
+				// Define the key codes for arrow keys
+				constexpr int keyLeft = GLFW_KEY_LEFT;
+				constexpr int keyRight = GLFW_KEY_RIGHT;
+				constexpr int keyUp = GLFW_KEY_UP;
+				constexpr int keyDown = GLFW_KEY_DOWN;
+
+				// Calculate horizontal and vertical movement
+				const float horizontal = ((float)io.KeysDown[keyRight] - (float)io.KeysDown[keyLeft]); // Right = 1, Left = -1
+				const float vertical = ((float)io.KeysDown[keyUp] - (float)io.KeysDown[keyDown]); // Up = 1, Down = -1
+
+				// Create the movement vector
+				const glm::vec2 moveVector(horizontal, vertical);
+				// Create and update the camera movement vector
+				const glm::vec3 cameraMoveVector(leftRight, upDown, forwardBackward);
+
+				camera.CameraInput((float)deltaTimeMs / 1000, cameraMoveVector, moveVector);
+				camera.UpdateCamera(io.DisplaySize.x, io.DisplaySize.y);
+
+				ImGui::Begin("Gizmo Transform");
+				EditTransform(camera, cubeModel.GetModelMatrixPtr());
+				ImGui::End();
+
+				ImGui::Render();
+
 				drawFrame(runningTime / 1000);
 				frameCount++;  // Increase frame count
 				deltaTimeAccumulator += deltaTimeMs;  // Accumulate delta time in milliseconds
@@ -2479,6 +2552,9 @@ private:
 			vkDestroySemaphore(m_Device, m_ImageAvailableSemaphore[i], nullptr);
 			vkDestroySemaphore(m_Device, m_RenderFinishedSemaphore[i], nullptr);
 			vkDestroyFence(m_Device, m_InFlightFence[i], nullptr);
+
+			vkDestroySemaphore(m_Device, m_ComputeFinishedSemaphores[i], nullptr);
+			vkDestroyFence(m_Device, m_ComputeInFlightFences[i], nullptr);
 
 			vkDestroyBuffer(m_Device, m_ShaderStorageBuffers[i], nullptr);
 			vkFreeMemory(m_Device, m_ShaderStorageBuffersMemory[i], nullptr);
@@ -2559,6 +2635,7 @@ private:
 	// Commands
 	VkCommandPool m_CommandPool = VK_NULL_HANDLE;
 	VkCommandBuffer m_CommandBuffer[MAX_FRAMES_IN_FLIGHT] = {};
+	VkCommandBuffer m_ComputeCommandBuffer[MAX_FRAMES_IN_FLIGHT] = {};
 
 	// Automatically created with the Logical Device
 	VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
@@ -2633,6 +2710,8 @@ private:
 	VkPipelineLayout m_ComputePipelineLayout = VK_NULL_HANDLE;
 	VkPipeline m_ComputePipeline = VK_NULL_HANDLE;
 
+	VkFence m_ComputeInFlightFences[MAX_FRAMES_IN_FLIGHT];
+	VkSemaphore m_ComputeFinishedSemaphores[MAX_FRAMES_IN_FLIGHT];
 
 	// Uniform Buffers Dt
 	std::vector<VkBuffer> m_DtBuffers;

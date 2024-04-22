@@ -381,5 +381,19 @@
     <None Include="..\Shaders\particle.comp">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="..\Shaders\HLSL\compileHLSL.bat">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\Shaders\HLSL\frag.hlsl">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\Shaders\HLSL\vert.hlsl">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="..\Shaders\HLSL\particle.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

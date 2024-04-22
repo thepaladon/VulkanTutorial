@@ -146,9 +146,22 @@
     <None Include="..\Dependencies\Include\assimp\vector2.inl" />
     <None Include="..\Dependencies\Include\assimp\vector3.inl" />
     <None Include="..\Shaders\compile.bat" />
+    <None Include="..\Shaders\HLSL\compileHLSL.bat" />
     <None Include="..\Shaders\particle.comp" />
     <None Include="..\Shaders\shader.frag" />
     <None Include="..\Shaders\shader.vert" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Shaders\HLSL\frag.hlsl">
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
+      <FileType>Document</FileType>
+    </None>
+    <None Include="..\Shaders\HLSL\particle.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="..\Shaders\HLSL\vert.hlsl">
+      <FileType>Document</FileType>
+    </None>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

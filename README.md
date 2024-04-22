@@ -20,7 +20,8 @@ I might do some bigger things with this or I might not. For now, I'm taking it o
 - Basic Vertex + Fragment Shader
 - Basic Compute Shader for Particles
 - ImGui + ImGuizmo
-
+- HLSL/GLSL Shader Compilation
+ 
 ## Getting Started
 It should run without issue if you have downloaded the [Vulkan SDK](https://vulkan.lunarg.com/#new_tab).
 

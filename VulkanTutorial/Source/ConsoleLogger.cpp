@@ -1,7 +1,6 @@
 #include "ConsoleLogger.h"
 
 #include <cassert>
-#include <iostream>
 #include <ctime>
 #include <cstdarg>
 #include <iomanip>
@@ -89,8 +88,6 @@ namespace Logger {
         std::printf(" [%s] ", timeStr.c_str());
         handleArgs(format, args);
     }
-
-
 
      void logInfo(const char* file, int line, const char* format, ...) {
         va_list args;

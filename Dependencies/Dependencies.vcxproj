@@ -18,7 +18,7 @@
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{a9ba1acc-701f-4a34-9d09-c7f4d453dbae}</ProjectGuid>
-    <RootNamespace>DependencyProj</RootNamespace>
+    <RootNamespace>Dependencies</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

@@ -95,8 +95,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(VULKAN_SDK);$(SolutionDir)Dependencies\Lib\assimp;$(SolutionDir)Dependencies\Lib\GLFW-vc2022;$(SolutionDir)Build\Library\DependencyProj\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;DependencyProj.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(VULKAN_SDK);$(SolutionDir)Dependencies\Lib\assimp;$(SolutionDir)Dependencies\Lib\GLFW-vc2022;$(SolutionDir)Build\Library\Dependencies\$(Configuration);</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Dependencies.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference />
     <ProjectReference />
@@ -143,8 +143,8 @@ xcopy /E /I /Y "$(SolutionDir)Resources" "$(TargetDir)Resources"</Command>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(VULKAN_SDK);$(SolutionDir)Dependencies\Lib\assimp;$(SolutionDir)Dependencies\Lib\GLFW-vc2022;$(SolutionDir)Build\Library\DependencyProj\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;DependencyProj.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(VULKAN_SDK);$(SolutionDir)Dependencies\Lib\assimp;$(SolutionDir)Dependencies\Lib\GLFW-vc2022;$(SolutionDir)Build\Library\Dependencies\$(Configuration);</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Dependencies.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference />
     <ProjectReference />
@@ -189,8 +189,8 @@ xcopy /E /I /Y "$(SolutionDir)Resources" "$(TargetDir)Resources"</Command>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(VULKAN_SDK);$(SolutionDir)Dependencies\Lib\assimp;$(SolutionDir)Dependencies\Lib\GLFW-vc2022;$(SolutionDir)Build\Library\DependencyProj\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;DependencyProj.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(VULKAN_SDK);$(SolutionDir)Dependencies\Lib\assimp;$(SolutionDir)Dependencies\Lib\GLFW-vc2022;$(SolutionDir)Build\Library\Dependencies\$(Configuration);</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Dependencies.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference />
     <ProjectReference />

@@ -22,9 +22,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <cstdint> // Necessary for uint32_t
-#include <limits> // Necessary for std::numeric_limits
-#include <algorithm> // Necessary for std::clamp
+#include <cstdint>		// Necessary for uint32_t
+#include <limits>		// Necessary for std::numeric_limits
+#include <algorithm>	// Necessary for std::clamp
 #include <array>
 #include <cassert>
 #include <fstream>
@@ -1015,9 +1015,7 @@ private:
 			throw std::runtime_error("failed to create shader module!");
 		}
 
-
 		return shaderModule;
-
 	}
 
 
@@ -1201,7 +1199,6 @@ private:
 
 		m_ShaderStages[0] = shaderStages[0];
 		m_ShaderStages[1] = shaderStages[1];
-
 	}
 
 	void createRenderPass() {
@@ -1371,7 +1368,6 @@ private:
 				throw std::runtime_error("failed to create framebuffer!");
 			}
 		}
-
 	}
 
 	void createCommandPool() {
@@ -1385,7 +1381,6 @@ private:
 		if (vkCreateCommandPool(m_Device, &poolInfo, nullptr, &m_CommandPool) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create command pool!");
 		}
-
 	}
 
 	void createCommandBuffer()
@@ -1395,7 +1390,6 @@ private:
 		allocInfo.commandPool = m_CommandPool;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		allocInfo.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
-
 
 		if (vkAllocateCommandBuffers(m_Device, &allocInfo, m_CommandBuffer) != VK_SUCCESS) {
 			throw std::runtime_error("failed to allocate command buffers!");
@@ -1410,9 +1404,7 @@ private:
 		if (vkAllocateCommandBuffers(m_Device, &compAllocInfo, m_ComputeCommandBuffer) != VK_SUCCESS) {
 			throw std::runtime_error("failed to allocate command buffers!");
 		}
-
 	}
-
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
 		VkCommandBufferBeginInfo beginInfo{};
@@ -1453,7 +1445,6 @@ private:
 		viewport.maxDepth = 1.0f;
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
-		
 		VkRect2D scissor{};
 		scissor.offset = { 0, 0 };
 		scissor.extent = m_SwapChainExtent;
@@ -1498,7 +1489,6 @@ private:
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 			throw std::runtime_error("failed to record command buffer!");
 		}
-
 	}
 
 	void createSyncObjects()
@@ -1522,11 +1512,8 @@ private:
 				throw std::runtime_error("failed to create compute synchronization objects for a frame!");
 			}
 		}
-
-
-
 	}
-
+ 
 	void recreateSwapChain()
 	{
 		vkDeviceWaitIdle(m_Device);
@@ -2405,13 +2392,11 @@ private:
 
 	void drawFrame(double dt)
 	{
-
 		VkResult res = VK_SUCCESS;
 
 		const auto& compCommandBuffer = m_ComputeCommandBuffer[currentFrame];
 		const auto& computeFences = m_ComputeInFlightFences[currentFrame];
 		const auto& computeSemaph = m_ComputeFinishedSemaphores[currentFrame];
-
 
 		// Compute submission
 		vkWaitForFences(m_Device, 1, &computeFences, VK_TRUE, UINT64_MAX);
@@ -2449,7 +2434,6 @@ private:
 			throw std::runtime_error("failed to submit compute command buffer!");
 		}
 
-		
 		const auto commandBuffer = m_CommandBuffer[currentFrame];
 		const auto renderedS = m_RenderFinishedSemaphore[currentFrame];
 		const auto inFlightFence = m_InFlightFence[currentFrame];
@@ -2750,7 +2734,7 @@ private:
 	VkCommandPool m_CommandPool = VK_NULL_HANDLE;
 	VkCommandBuffer m_CommandBuffer[MAX_FRAMES_IN_FLIGHT] = {};
 	VkCommandBuffer m_ComputeCommandBuffer[MAX_FRAMES_IN_FLIGHT] = {};
-
+   
 	// Automatically created with the Logical Device
 	VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
 	VkQueue m_PresentQueue = VK_NULL_HANDLE;

@@ -45,6 +45,8 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+#include "framework.h"
+
 constexpr uint32_t WIDTH = 1600;
 constexpr uint32_t HEIGHT = 1200;
 constexpr int MAX_FRAMES_IN_FLIGHT = 2;
@@ -79,14 +81,12 @@ const bool enableValidationLayers = false;
 const bool enableValidationLayers = true;
 #endif
 
-
 //#define USE_HLSL 1
 #ifdef USE_HLSL
 const std::string shaderDir = "Shaders/Compiled/HLSL/";
 #else
 const std::string shaderDir = "Shaders/Compiled/GLSL/";
 #endif
-
 
 static std::vector<char> readFile(const std::string& filename) {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -103,7 +103,6 @@ static std::vector<char> readFile(const std::string& filename) {
 	file.close();
 
 	return buffer;
-
 }
 
 bool checkValidationLayerSupport() {
@@ -389,6 +388,10 @@ void EditTransform(FreeCamera& camera, glm::mat4* matrix)
 class HelloTriangleApplication {
 public:
 	void Run() {
+
+		float i = 35.f;
+		fnDependencyProj(i);
+
 		InitWindow();
 		InitVulkan();
 		MainLoop();

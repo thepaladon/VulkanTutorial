@@ -12,9 +12,13 @@
 [Rr]eleases/
 x64/
 build/
+Build/
+Intermediate/
 bld/
 [Bb]in/
 [Oo]bj/
+
+
 
 # Shaders
 *.spv

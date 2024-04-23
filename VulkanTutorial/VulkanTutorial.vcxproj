@@ -15,141 +15,15 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Dependencies\ImGui\imconfig.h" />
-    <ClInclude Include="..\Dependencies\ImGui\imgui.h" />
-    <ClInclude Include="..\Dependencies\ImGui\ImGuizmo.h" />
-    <ClInclude Include="..\Dependencies\ImGui\imgui_impl_glfw.h" />
-    <ClInclude Include="..\Dependencies\ImGui\imgui_impl_vulkan.h" />
-    <ClInclude Include="..\Dependencies\ImGui\imgui_internal.h" />
-    <ClInclude Include="..\Dependencies\ImGui\imstb_rectpack.h" />
-    <ClInclude Include="..\Dependencies\ImGui\imstb_textedit.h" />
-    <ClInclude Include="..\Dependencies\ImGui\imstb_truetype.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\aabb.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\ai_assert.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\anim.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\Base64.hpp" />
-    <ClInclude Include="..\Dependencies\Include\assimp\BaseImporter.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\Bitmap.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\BlobIOSystem.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\ByteSwapper.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\camera.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\cexport.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\cfileio.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\cimport.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\ColladaMetaData.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\color4.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\commonMetaData.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\config.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\CreateAnimMesh.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\DefaultIOStream.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\DefaultIOSystem.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\DefaultLogger.hpp" />
-    <ClInclude Include="..\Dependencies\Include\assimp\defs.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\Exceptional.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\Exporter.hpp" />
-    <ClInclude Include="..\Dependencies\Include\assimp\fast_atof.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\GenericProperty.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\GltfMaterial.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\Hash.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\Importer.hpp" />
-    <ClInclude Include="..\Dependencies\Include\assimp\importerdesc.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\IOStream.hpp" />
-    <ClInclude Include="..\Dependencies\Include\assimp\IOStreamBuffer.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\IOSystem.hpp" />
-    <ClInclude Include="..\Dependencies\Include\assimp\light.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\LineSplitter.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\LogAux.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\Logger.hpp" />
-    <ClInclude Include="..\Dependencies\Include\assimp\LogStream.hpp" />
-    <ClInclude Include="..\Dependencies\Include\assimp\material.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\MathFunctions.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\matrix3x3.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\matrix4x4.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\MemoryIOWrapper.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\mesh.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\metadata.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\NullLogger.hpp" />
-    <ClInclude Include="..\Dependencies\Include\assimp\ObjMaterial.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\ParsingUtils.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\pbrmaterial.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\postprocess.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\Profiler.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\ProgressHandler.hpp" />
-    <ClInclude Include="..\Dependencies\Include\assimp\qnan.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\quaternion.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\RemoveComments.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\scene.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\SceneCombiner.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\SGSpatialSort.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\SkeletonMeshBuilder.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\SmallVector.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\SmoothingGroups.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\SpatialSort.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\StandardShapes.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\StreamReader.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\StreamWriter.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\StringComparison.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\StringUtils.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\Subdivision.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\texture.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\TinyFormatter.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\types.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\vector2.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\vector3.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\version.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\Vertex.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\XmlParser.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\XMLTools.h" />
-    <ClInclude Include="..\Dependencies\Include\assimp\ZipArchiveIOSystem.h" />
-    <ClInclude Include="..\Dependencies\stb\stb_image.h" />
-    <ClInclude Include="..\Dependencies\stb\stb_image_resize2.h" />
-    <ClInclude Include="..\Dependencies\stb\stb_image_write.h" />
     <ClInclude Include="Source\FreeCamera.h" />
     <ClInclude Include="Source\ConsoleLogger.h" />
     <ClInclude Include="Source\Transform.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\Dependencies\ImGui\imgui.cpp" />
-    <ClCompile Include="..\Dependencies\ImGui\ImGuizmo.cpp" />
-    <ClCompile Include="..\Dependencies\ImGui\imgui_demo.cpp" />
-    <ClCompile Include="..\Dependencies\ImGui\imgui_draw.cpp" />
-    <ClCompile Include="..\Dependencies\ImGui\imgui_impl_glfw.cpp" />
-    <ClCompile Include="..\Dependencies\ImGui\imgui_impl_vulkan.cpp" />
-    <ClCompile Include="..\Dependencies\ImGui\imgui_tables.cpp" />
-    <ClCompile Include="..\Dependencies\ImGui\imgui_widgets.cpp" />
     <ClCompile Include="Source\FreeCamera.cpp" />
     <ClCompile Include="Source\ConsoleLogger.cpp" />
     <ClCompile Include="Source\Transform.cpp" />
     <ClCompile Include="Source\VulkanTutorial.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\Dependencies\Include\assimp\.editorconfig" />
-    <None Include="..\Dependencies\Include\assimp\color4.inl" />
-    <None Include="..\Dependencies\Include\assimp\config.h.in" />
-    <None Include="..\Dependencies\Include\assimp\material.inl" />
-    <None Include="..\Dependencies\Include\assimp\matrix3x3.inl" />
-    <None Include="..\Dependencies\Include\assimp\matrix4x4.inl" />
-    <None Include="..\Dependencies\Include\assimp\quaternion.inl" />
-    <None Include="..\Dependencies\Include\assimp\SmoothingGroups.inl" />
-    <None Include="..\Dependencies\Include\assimp\vector2.inl" />
-    <None Include="..\Dependencies\Include\assimp\vector3.inl" />
-    <None Include="..\Shaders\GLSL\compileGLSL.bat" />
-    <None Include="..\Shaders\GLSL\particle.comp" />
-    <None Include="..\Shaders\GLSL\shader.frag" />
-    <None Include="..\Shaders\GLSL\shader.vert" />
-    <None Include="..\Shaders\HLSL\compileHLSL.bat" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\Shaders\HLSL\frag.hlsl">
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
-      <FileType>Document</FileType>
-    </None>
-    <None Include="..\Shaders\HLSL\particle.hlsl">
-      <FileType>Document</FileType>
-    </None>
-    <None Include="..\Shaders\HLSL\vert.hlsl">
-      <FileType>Document</FileType>
-    </None>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -205,13 +79,16 @@
     <OutDir>$(SolutionDir)Build\Executable\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Intermediate\Executable\$(Configuration)\</IntDir>
   </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnabled>true</VcpkgEnabled>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions); GLM_ENABLE_EXPERIMENTAL</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK);$(ProjectDir)Source;$(SolutionDir)Dependencies\Include;$(SolutionDir)Dependencies\;$(SolutionDir)Dependencies\ImGui;$(SolutionDir)DependencyProj\Headers;$(SolutionDir)DependencyProj;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK);$(ProjectDir)Source;$(SolutionDir)Dependencies\Include;$(SolutionDir)Dependencies\;$(SolutionDir)Dependencies\ImGui;$(SolutionDirDependencies\Headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -219,7 +96,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(VULKAN_SDK);$(SolutionDir)Dependencies\Lib\assimp;$(SolutionDir)Dependencies\Lib\GLFW-vc2022;$(SolutionDir)Build\Library\DependencyProj\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;assimp-vc143-mt.lib;DependencyProj.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>vulkan-1.lib;DependencyProj.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference />
     <ProjectReference />
@@ -253,7 +130,7 @@ xcopy /E /I /Y "$(SolutionDir)Resources" "$(TargetDir)Resources"</Command>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions) ; GLM_ENABLE_EXPERIMENTAL</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK);$(ProjectDir)Source;$(SolutionDir)Dependencies\Include;$(SolutionDir)Dependencies\;$(SolutionDir)Dependencies\ImGui;$(SolutionDir)DependencyProj\Headers;$(SolutionDir)DependencyProj;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK);$(ProjectDir)Source;$(SolutionDir)Dependencies\Include;$(SolutionDir)Dependencies\;$(SolutionDir)Dependencies\ImGui;$(SolutionDirDependencies\Headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
@@ -267,7 +144,7 @@ xcopy /E /I /Y "$(SolutionDir)Resources" "$(TargetDir)Resources"</Command>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(VULKAN_SDK);$(SolutionDir)Dependencies\Lib\assimp;$(SolutionDir)Dependencies\Lib\GLFW-vc2022;$(SolutionDir)Build\Library\DependencyProj\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;assimp-vc143-mt.lib;DependencyProj.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>vulkan-1.lib;DependencyProj.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference />
     <ProjectReference />
@@ -303,7 +180,7 @@ xcopy /E /I /Y "$(SolutionDir)Resources" "$(TargetDir)Resources"</Command>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions); GLM_ENABLE_EXPERIMENTAL</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK);$(ProjectDir)Source;$(SolutionDir)Dependencies\Include;$(SolutionDir)Dependencies\;$(SolutionDir)Dependencies\ImGui;$(SolutionDir)DependencyProj\Headers;$(SolutionDir)DependencyProj;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK);$(ProjectDir)Source;$(SolutionDir)Dependencies\Include;$(SolutionDir)Dependencies\;$(SolutionDir)Dependencies\ImGui;$(SolutionDirDependencies\Headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -313,7 +190,7 @@ xcopy /E /I /Y "$(SolutionDir)Resources" "$(TargetDir)Resources"</Command>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(VULKAN_SDK);$(SolutionDir)Dependencies\Lib\assimp;$(SolutionDir)Dependencies\Lib\GLFW-vc2022;$(SolutionDir)Build\Library\DependencyProj\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;assimp-vc143-mt.lib;DependencyProj.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>vulkan-1.lib;DependencyProj.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference />
     <ProjectReference />

@@ -1,11 +1,8 @@
+#include "ConsoleLogger.h"
 
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
 
-#include "ConsoleLogger.h"
-
-#include <vulkan/vulkan.h>
-#define VK_USE_PLATFORM_WIN32_KHR
 #define GLFW_INCLUDE_VULKAN
 
 #include <GLFW/glfw3.h>
@@ -15,6 +12,12 @@
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
+
+#include <vulkan/vulkan.h>
+#define VK_USE_PLATFORM_WIN32_KHR
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -36,16 +39,13 @@
 
 #include "FreeCamera.h"
 
-#define STB_IMAGE_IMPLEMENTATION
 #include <random>
 
-#include "stb/stb_image.h"
-
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-
 #include "framework.h"
+#include "assimp/Importer.hpp"
+#include "assimp/postprocess.h"
+#include "assimp/scene.h"
+
 
 constexpr uint32_t WIDTH = 1600;
 constexpr uint32_t HEIGHT = 1200;

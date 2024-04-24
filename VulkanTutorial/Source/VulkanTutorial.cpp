@@ -86,11 +86,6 @@ static std::vector<char> readFile(const std::string& filename) {
 	return buffer;
 }
 
-
-
-
-
-
 // Goofy but keep it global for now
 // The annoyances of working with this "HelloTriangleApplication" class
 std::vector<VkDynamicState> g_dynamicStatesOps = {
@@ -499,18 +494,6 @@ private:
 	}
 
 	
-	void setupDebugMessenger() {
-		if (!wVkConstants::enableValidationLayers) return;
-
-		VkDebugUtilsMessengerCreateInfoEXT createInfo;
-		wVkHelpers::populateDebugMessengerCreateInfo(createInfo);
-
-		if (CreateDebugUtilsMessengerEXT(wVkGlobals::g_Instance, &createInfo, nullptr, &m_DebugMessenger) != VK_SUCCESS) {
-			throw std::runtime_error("failed to set up debug messenger!");
-		}
-
-	}
-
 
 	bool isDeviceSuitable(VkPhysicalDevice device) {
 		QueueFamilyIndices indices = findQueueFamilies(device);
@@ -2179,7 +2162,6 @@ private:
 
 		m_BackEndRenderer.Initialize(nullptr, nullptr, nullptr);
 
-		setupDebugMessenger();
 
 		createSurface();
 		pickPhysicalDevice();
@@ -2479,12 +2461,11 @@ private:
 		// Wait until everything is completed until we clean-up
 		vkDeviceWaitIdle(m_Device);
 
+
+
 		cleanupImGui();
 
-		if (wVkConstants::enableValidationLayers) {
-			DestroyDebugUtilsMessengerEXT(wVkGlobals::g_Instance, m_DebugMessenger, nullptr);
-		}
-
+	
 		vkDestroyDescriptorSetLayout(m_Device, m_DescSetLayout, nullptr);
 		vkDestroyDescriptorPool(m_Device, m_DescPool, nullptr);
 
@@ -2539,29 +2520,18 @@ private:
 		destroySwapchain();
 
 		vkDestroyDevice(m_Device, nullptr);
+
 		vkDestroySurfaceKHR(wVkGlobals::g_Instance, m_Surface, nullptr);
-		vkDestroyInstance(wVkGlobals::g_Instance, nullptr);
+		m_BackEndRenderer.Shutdown();
+
 		glfwDestroyWindow(m_Window);
 		glfwTerminate();
 
 	}
 
-	VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
-		auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-		if (func != nullptr) {
-			return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-		}
-		else {
-			return VK_ERROR_EXTENSION_NOT_PRESENT;
-		}
-	}
+	
 
-	void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
-		auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-		if (func != nullptr) {
-			func(instance, debugMessenger, pAllocator);
-		}
-	}
+
 
 	uint32_t currentFrame = 0;
 	Transform cubeModel;
@@ -2671,8 +2641,7 @@ private:
 	//Screen
 	VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
 
-	// Vulkan Debug
-	VkDebugUtilsMessengerEXT m_DebugMessenger = VK_NULL_HANDLE;
+	
 
 	// GLFW
 	std::string m_WindowName = "VulkanTutorial";

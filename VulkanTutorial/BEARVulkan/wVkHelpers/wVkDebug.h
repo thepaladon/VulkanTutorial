@@ -5,6 +5,8 @@
 #include "vulkan/vulkan.h"
 #include "Utils/ConsoleLogger.h"
 
+#include <stdexcept>
+
 namespace wVkHelpers {
 
 	inline bool checkValidationLayerSupport() {
@@ -74,5 +76,40 @@ namespace wVkHelpers {
 		createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT;
 		createInfo.pfnUserCallback = debugCallback;
 	}
+
+
+	inline VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
+		auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+		if (func != nullptr) {
+			return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+		}
+		else {
+			return VK_ERROR_EXTENSION_NOT_PRESENT;
+		}
+	}
+
+	inline void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
+		auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+		if (func != nullptr) {
+			func(instance, debugMessenger, pAllocator);
+		}
+	}
+
+	inline VkDebugUtilsMessengerEXT setupDebugMessenger() {
+
+		VkDebugUtilsMessengerEXT debugMessenger;
+
+		if (!wVkConstants::enableValidationLayers) return debugMessenger;
+
+		VkDebugUtilsMessengerCreateInfoEXT createInfo;
+		wVkHelpers::populateDebugMessengerCreateInfo(createInfo);
+
+		if (CreateDebugUtilsMessengerEXT(wVkGlobals::g_Instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
+			throw std::runtime_error("failed to set up debug messenger!");
+		}
+
+		return debugMessenger;
+	}
+
 
 }

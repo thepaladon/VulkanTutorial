@@ -15,6 +15,7 @@ void BackEndRenderer::ResizeFrameBuffers(const uint32_t width, const uint32_t he
 void BackEndRenderer::Initialize(Window* window, Texture** mainRenderTargets, CommandList* cmdList)
 {
 	wVkGlobals::g_Instance = wVkHelpers::createInstance();
+	wVkGlobals::g_DebugMessenger = wVkHelpers::setupDebugMessenger();
 
 }
 
@@ -50,7 +51,11 @@ uint32_t BackEndRenderer::GetCurrentBackBufferIndex() const
 
 void BackEndRenderer::Shutdown()
 {
+	if (wVkConstants::enableValidationLayers) {
+		wVkHelpers::DestroyDebugUtilsMessengerEXT(g_Instance, g_DebugMessenger, nullptr);
+	}
 
+	vkDestroyInstance(g_Instance, nullptr);
 }
 
 void BackEndRenderer::ImguiBeginFrame()

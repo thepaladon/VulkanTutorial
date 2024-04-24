@@ -13,6 +13,8 @@ namespace wVkGlobals
 	VkRenderPass g_RenderPass = VK_NULL_HANDLE;
 	VkFormat g_ColorFormat = {};
 
+	VkDebugUtilsMessengerEXT g_DebugMessenger = VK_NULL_HANDLE;
+
 	uint32_t g_CurrentImageIndex = 0;
 
 	// Useful variables

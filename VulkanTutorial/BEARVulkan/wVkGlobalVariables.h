@@ -18,6 +18,8 @@ namespace wVkGlobals
 	extern VkRenderPass g_RenderPass;
 	extern VkFormat g_ColorFormat;
 
+	extern VkDebugUtilsMessengerEXT g_DebugMessenger;
+
 	extern uint32_t g_RTVDescSize; // Render Target View Descriptor Size
 	extern uint32_t g_CBV_SRV_UAVDescSize; // Constant Buffer View, Shader Resource View, Unordered Access View Descriptor Size
 	extern uint32_t g_SamplerDescSize;

@@ -1,13 +1,11 @@
 #include "BEARHeaders/BackEndRenderer.h"
 
 #include "wVkGlobalVariables.h"
+#include "wVkHelpers/wVkInstance.h"
 
 using namespace wVkGlobals;
 
-BackEndRenderer::BackEndRenderer()
-{
-
-}
+BackEndRenderer::BackEndRenderer() {}
 
 void BackEndRenderer::ResizeFrameBuffers(const uint32_t width, const uint32_t height)
 {
@@ -16,6 +14,7 @@ void BackEndRenderer::ResizeFrameBuffers(const uint32_t width, const uint32_t he
 
 void BackEndRenderer::Initialize(Window* window, Texture** mainRenderTargets, CommandList* cmdList)
 {
+	wVkGlobals::g_Instance = wVkHelpers::createInstance();
 
 }
 

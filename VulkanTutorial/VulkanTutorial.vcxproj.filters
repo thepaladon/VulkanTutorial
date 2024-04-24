@@ -149,7 +149,7 @@
     <ClCompile Include="BEARVulkan\TLAS.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="BEARVulkan\DX12GlobalVariables.cpp">
+    <ClCompile Include="BEARVulkan\wVkGlobalVariables.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="BEARVulkan\BackEndRenderer.cpp">

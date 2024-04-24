@@ -2177,10 +2177,7 @@ private:
 
 		// ToDo: Fix this madness...
 
-
-		wVkGlobals::g_Instance = wVkHelpers::createInstance();
-
-
+		m_BackEndRenderer.Initialize(nullptr, nullptr, nullptr);
 
 		setupDebugMessenger();
 
@@ -2570,6 +2567,8 @@ private:
 	Transform cubeModel;
 
 	FreeCamera camera;
+
+	BackEndRenderer m_BackEndRenderer;
 
 	// ImGui
 	uint32_t m_MinImageCount = 0; //Gotten from createSwapchain 

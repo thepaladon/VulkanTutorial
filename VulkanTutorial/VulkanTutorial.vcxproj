@@ -42,7 +42,7 @@
     <ClCompile Include="BEARVulkan\Buffer.cpp" />
     <ClCompile Include="BEARVulkan\CommandList.cpp" />
     <ClCompile Include="BEARVulkan\ComputePipelineDescription.cpp" />
-    <ClCompile Include="BEARVulkan\DX12GlobalVariables.cpp" />
+    <ClCompile Include="BEARVulkan\wVkGlobalVariables.cpp" />
     <ClCompile Include="BEARVulkan\ResourceDescriptorHeap.cpp" />
     <ClCompile Include="BEARVulkan\Sampler.cpp" />
     <ClCompile Include="BEARVulkan\SamplerDescriptorHeap.cpp" />

@@ -1,4 +1,4 @@
-#include "ConsoleLogger.h"
+#include "Utils/ConsoleLogger.h"
 
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
@@ -37,7 +37,7 @@
 
 #include "ImGuizmo.h"
 
-#include "FreeCamera.h"
+#include "Utils/FreeCamera.h"
 
 #include <random>
 
@@ -45,6 +45,17 @@
 #include "assimp/Importer.hpp"
 #include "assimp/postprocess.h"
 #include "assimp/scene.h"
+
+#include "BEARHeaders/BLAS.h"
+#include "BEARHeaders/Buffer.h"
+#include "BEARHeaders/CommandList.h"
+#include "BEARHeaders/ComputePipelineDescription.h"
+#include "BEARHeaders/ResourceDescriptorHeap.h"
+#include "BEARHeaders/Sampler.h"
+#include "BEARHeaders/SamplerDescriptorHeap.h"
+#include "BEARHeaders/ShaderLayout.h"
+#include "BEARHeaders/Texture.h"
+#include "BEARHeaders/TLAS.h"
 
 
 constexpr uint32_t WIDTH = 1600;

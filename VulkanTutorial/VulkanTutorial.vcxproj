@@ -15,14 +15,25 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Source\FreeCamera.h" />
-    <ClInclude Include="Source\ConsoleLogger.h" />
-    <ClInclude Include="Source\Transform.h" />
+    <ClInclude Include="BEARHeaders\BLAS.h" />
+    <ClInclude Include="BEARHeaders\Buffer.h" />
+    <ClInclude Include="BEARHeaders\CommandList.h" />
+    <ClInclude Include="BEARHeaders\ComputePipelineDescription.h" />
+    <ClInclude Include="BEARHeaders\ResourceDescriptorHeap.h" />
+    <ClInclude Include="BEARHeaders\Sampler.h" />
+    <ClInclude Include="BEARHeaders\SamplerDescriptorHeap.h" />
+    <ClInclude Include="BEARHeaders\ShaderLayout.h" />
+    <ClInclude Include="BEARHeaders\Texture.h" />
+    <ClInclude Include="BEARHeaders\TLAS.h" />
+    <ClInclude Include="BEARVulkan\TypeDefs.h" />
+    <ClInclude Include="Utils\FreeCamera.h" />
+    <ClInclude Include="Utils\ConsoleLogger.h" />
+    <ClInclude Include="Utils\Transform.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Source\FreeCamera.cpp" />
-    <ClCompile Include="Source\ConsoleLogger.cpp" />
-    <ClCompile Include="Source\Transform.cpp" />
+    <ClCompile Include="Utils\FreeCamera.cpp" />
+    <ClCompile Include="Utils\ConsoleLogger.cpp" />
+    <ClCompile Include="Utils\Transform.cpp" />
     <ClCompile Include="Source\VulkanTutorial.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -88,7 +99,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions); GLM_ENABLE_EXPERIMENTAL</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK);$(ProjectDir)Source;$(SolutionDir)Dependencies\Include;$(SolutionDir)Dependencies\;$(SolutionDir)Dependencies\ImGui;$(SolutionDirDependencies\Headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK);$(ProjectDir);$(SolutionDir)Dependencies\Include;$(SolutionDir)Dependencies\;$(SolutionDir)Dependencies\ImGui;$(SolutionDirDependencies\Headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -130,7 +141,7 @@ xcopy /E /I /Y "$(SolutionDir)Resources" "$(TargetDir)Resources"</Command>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions) ; GLM_ENABLE_EXPERIMENTAL</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK);$(ProjectDir)Source;$(SolutionDir)Dependencies\Include;$(SolutionDir)Dependencies\;$(SolutionDir)Dependencies\ImGui;$(SolutionDirDependencies\Headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK);$(ProjectDir);$(SolutionDir)Dependencies\Include;$(SolutionDir)Dependencies\;$(SolutionDir)Dependencies\ImGui;$(SolutionDirDependencies\Headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
@@ -180,7 +191,7 @@ xcopy /E /I /Y "$(SolutionDir)Resources" "$(TargetDir)Resources"</Command>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions); GLM_ENABLE_EXPERIMENTAL</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK);$(ProjectDir)Source;$(SolutionDir)Dependencies\Include;$(SolutionDir)Dependencies\;$(SolutionDir)Dependencies\ImGui;$(SolutionDirDependencies\Headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK);$(ProjectDir);$(SolutionDir)Dependencies\Include;$(SolutionDir)Dependencies\;$(SolutionDir)Dependencies\ImGui;$(SolutionDirDependencies\Headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>

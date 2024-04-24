@@ -2,8 +2,7 @@
 
 #include "wVkGlobalVariables.h"
 #include "wVkHelpers/wVkInstance.h"
-
-
+#include "wVkHelpers/wVkPhysicalDevice.h"
 
 
 using namespace wVkGlobals;
@@ -26,6 +25,9 @@ void BackEndRenderer::Initialize(GLFWwindow* window, Texture** mainRenderTargets
 	if (glfwCreateWindowSurface(wVkGlobals::g_Instance, window, nullptr, &g_Surface) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create window surface!");
 	}
+
+
+	g_PhysicalDevice = wVkHelpers::pickPhysicalDevice();
 
 }
 

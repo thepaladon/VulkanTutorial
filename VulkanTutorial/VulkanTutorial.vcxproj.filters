@@ -105,6 +105,15 @@
     <ClInclude Include="BEARVulkan\wVkHelpers\wVkDebug.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="BEARVulkan\wVkHelpers\wVkPhysicalDevice.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BEARVulkan\wVkHelpers\wVkQueueFamilies.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BEARVulkan\wVkHelpers\wVkSwapchain.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\VulkanTutorial.cpp">

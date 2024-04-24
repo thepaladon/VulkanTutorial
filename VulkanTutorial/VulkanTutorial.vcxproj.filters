@@ -96,6 +96,15 @@
     <ClInclude Include="BEARHeaders\BackEndRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="BEARVulkan\wVkHelpers\wVkInstance.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BEARVulkan\wVkConstants.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BEARVulkan\wVkHelpers\wVkDebug.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\VulkanTutorial.cpp">

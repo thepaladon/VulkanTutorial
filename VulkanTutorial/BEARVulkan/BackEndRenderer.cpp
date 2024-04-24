@@ -1,5 +1,9 @@
 #include "BEARHeaders/BackEndRenderer.h"
 
+#include "wVkGlobalVariables.h"
+
+using namespace wVkGlobals;
+
 BackEndRenderer::BackEndRenderer()
 {
 

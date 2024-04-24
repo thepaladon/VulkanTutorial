@@ -26,9 +26,12 @@
     <ClInclude Include="BEARHeaders\ShaderLayout.h" />
     <ClInclude Include="BEARHeaders\Texture.h" />
     <ClInclude Include="BEARHeaders\TLAS.h" />
+    <ClInclude Include="BEARVulkan\wVkConstants.h" />
     <ClInclude Include="BEARVulkan\wVkGlobalVariables.h" />
     <ClInclude Include="BEARVulkan\TypeDefs.h" />
     <ClInclude Include="BEARVulkan\wVkHelpers.h" />
+    <ClInclude Include="BEARVulkan\wVkHelpers\wVkDebug.h" />
+    <ClInclude Include="BEARVulkan\wVkHelpers\wVkInstance.h" />
     <ClInclude Include="Utils\FreeCamera.h" />
     <ClInclude Include="Utils\ConsoleLogger.h" />
     <ClInclude Include="Utils\Transform.h" />

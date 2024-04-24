@@ -1,6 +1,11 @@
 #pragma once
 #include <cstdint>
 
+#define GLFW_INCLUDE_VULKAN
+
+#include <GLFW/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_WIN32
+
 
 class Window;
 class Texture;
@@ -11,7 +16,7 @@ public:
 	BackEndRenderer();
 	~BackEndRenderer() {};
 
-	void Initialize(Window* window, Texture** mainRenderTargets, CommandList* cmdList);
+	void Initialize(GLFWwindow* window, Texture** mainRenderTargets, CommandList* cmdList);
 	void BeginFrame();
 	void EndFrame();
 	void Shutdown();

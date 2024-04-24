@@ -14,6 +14,7 @@ namespace wVkGlobals
 	VkFormat g_ColorFormat = {};
 
 	VkDebugUtilsMessengerEXT g_DebugMessenger = VK_NULL_HANDLE;
+	VkSurfaceKHR g_Surface = VK_NULL_HANDLE;
 
 	uint32_t g_CurrentImageIndex = 0;
 

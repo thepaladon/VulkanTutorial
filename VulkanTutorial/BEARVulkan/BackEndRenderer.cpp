@@ -3,6 +3,9 @@
 #include "wVkGlobalVariables.h"
 #include "wVkHelpers/wVkInstance.h"
 
+
+
+
 using namespace wVkGlobals;
 
 BackEndRenderer::BackEndRenderer() {}
@@ -12,10 +15,17 @@ void BackEndRenderer::ResizeFrameBuffers(const uint32_t width, const uint32_t he
 
 }
 
-void BackEndRenderer::Initialize(Window* window, Texture** mainRenderTargets, CommandList* cmdList)
+void BackEndRenderer::Initialize(GLFWwindow* window, Texture** mainRenderTargets, CommandList* cmdList)
 {
-	wVkGlobals::g_Instance = wVkHelpers::createInstance();
-	wVkGlobals::g_DebugMessenger = wVkHelpers::setupDebugMessenger();
+
+	g_Instance = wVkHelpers::createInstance();
+	g_DebugMessenger = wVkHelpers::setupDebugMessenger();
+
+	// Create Instance
+	// ToDo: Figure out how to do it from HWND for Ball
+	if (glfwCreateWindowSurface(wVkGlobals::g_Instance, window, nullptr, &g_Surface) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create window surface!");
+	}
 
 }
 

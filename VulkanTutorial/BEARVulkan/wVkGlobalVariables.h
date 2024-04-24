@@ -20,6 +20,13 @@ namespace wVkGlobals
 
 	extern VkDebugUtilsMessengerEXT g_DebugMessenger;
 
+	// Screen
+	extern VkSurfaceKHR g_Surface;
+
+
+
+
+
 	extern uint32_t g_RTVDescSize; // Render Target View Descriptor Size
 	extern uint32_t g_CBV_SRV_UAVDescSize; // Constant Buffer View, Shader Resource View, Unordered Access View Descriptor Size
 	extern uint32_t g_SamplerDescSize;

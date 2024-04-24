@@ -3,12 +3,7 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
 
-#define GLFW_INCLUDE_VULKAN
-
-#include <GLFW/glfw3.h>
-#define GLFW_EXPOSE_NATIVE_WIN32
 #include <set>
-#include <GLFW/glfw3native.h>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -17,7 +12,6 @@
 #include "stb/stb_image.h"
 
 #include <vulkan/vulkan.h>
-#define VK_USE_PLATFORM_WIN32_KHR
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -599,7 +593,7 @@ private:
 
 			// Querying whether the queue family we found also supports "presentation"
 			VkBool32 presentSupport = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_Surface, &presentSupport);
+			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, wVkGlobals::g_Surface, &presentSupport);
 			if (presentSupport) {
 				indices.presentFamily = i;
 			}
@@ -677,12 +671,6 @@ private:
 	}
 
 
-	void createSurface()
-	{
-		if (glfwCreateWindowSurface(wVkGlobals::g_Instance, m_Window, nullptr, &m_Surface) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create window surface!");
-		}
-	}
 
 
 	struct SwapChainSupportDetails {
@@ -695,24 +683,24 @@ private:
 		SwapChainSupportDetails details;
 
 		//Check details of Surface
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, m_Surface, &details.capabilities);
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, wVkGlobals::g_Surface, &details.capabilities);
 
 		//Check Format 
 		uint32_t formatCount;
-		vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_Surface, &formatCount, nullptr);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, wVkGlobals::g_Surface, &formatCount, nullptr);
 
 		if (formatCount != 0) {
 			details.formats.resize(formatCount);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_Surface, &formatCount, details.formats.data());
+			vkGetPhysicalDeviceSurfaceFormatsKHR(device, wVkGlobals::g_Surface, &formatCount, details.formats.data());
 		}
 
 		// Check Present mode
 		uint32_t presentModeCount;
-		vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_Surface, &presentModeCount, nullptr);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, wVkGlobals::g_Surface, &presentModeCount, nullptr);
 
 		if (presentModeCount != 0) {
 			details.presentModes.resize(presentModeCount);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_Surface, &presentModeCount, details.presentModes.data());
+			vkGetPhysicalDeviceSurfacePresentModesKHR(device, wVkGlobals::g_Surface, &presentModeCount, details.presentModes.data());
 		}
 
 
@@ -780,7 +768,7 @@ private:
 
 		VkSwapchainCreateInfoKHR createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		createInfo.surface = m_Surface;
+		createInfo.surface = wVkGlobals::g_Surface;
 		createInfo.minImageCount = imageCount;
 		createInfo.imageFormat = surfaceFormat.format;
 		createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -2160,10 +2148,8 @@ private:
 
 		// ToDo: Fix this madness...
 
-		m_BackEndRenderer.Initialize(nullptr, nullptr, nullptr);
+		m_BackEndRenderer.Initialize(m_Window, nullptr, nullptr);
 
-
-		createSurface();
 		pickPhysicalDevice();
 		createLogicalDevice();
 		createSwapChain();
@@ -2521,7 +2507,7 @@ private:
 
 		vkDestroyDevice(m_Device, nullptr);
 
-		vkDestroySurfaceKHR(wVkGlobals::g_Instance, m_Surface, nullptr);
+		vkDestroySurfaceKHR(wVkGlobals::g_Instance, wVkGlobals::g_Surface, nullptr);
 		m_BackEndRenderer.Shutdown();
 
 		glfwDestroyWindow(m_Window);
@@ -2638,10 +2624,6 @@ private:
 	std::vector<VkDeviceMemory> m_DtBuffersMemory;
 	std::vector<void*> m_DtBuffersMapped;
 
-	//Screen
-	VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
-
-	
 
 	// GLFW
 	std::string m_WindowName = "VulkanTutorial";

@@ -17,8 +17,8 @@
 		extern VkFormat g_ColorFormat;
 
 		// Useful variables
-		extern uint32_t g_MaxFramesInFlight; // Assuming you manage multiple frames in flight
-		extern uint32_t g_NumSwapChainImages;
+		extern constexpr uint32_t g_MaxFramesInFlight; // Assuming you manage multiple frames in flight
+		extern constexpr uint32_t g_NumSwapChainImages;
 		extern uint32_t g_RTVDescSize; // Render Target View Descriptor Size
 		extern uint32_t g_CBV_SRV_UAVDescSize; // Constant Buffer View, Shader Resource View, Unordered Access View Descriptor Size
 		extern uint32_t g_SamplerDescSize;

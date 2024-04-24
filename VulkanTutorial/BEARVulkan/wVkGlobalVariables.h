@@ -1,8 +1,7 @@
 #pragma once
 #include "vulkan/vulkan.h"
 
-namespace Ball
-{
+
 	namespace wVkGlobals
 	{
 		// Vulkan setup
@@ -25,4 +24,3 @@ namespace Ball
 		extern uint32_t g_SamplerDescSize;
 
 	} 
-} // namespace Ball

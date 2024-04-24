@@ -34,6 +34,16 @@
     <ClInclude Include="Utils\Transform.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BEARVulkan\BLAS.cpp" />
+    <ClCompile Include="BEARVulkan\Buffer.cpp" />
+    <ClCompile Include="BEARVulkan\CommandList.cpp" />
+    <ClCompile Include="BEARVulkan\ComputePipelineDescription.cpp" />
+    <ClCompile Include="BEARVulkan\ResourceDescriptorHeap.cpp" />
+    <ClCompile Include="BEARVulkan\Sampler.cpp" />
+    <ClCompile Include="BEARVulkan\SamplerDescriptorHeap.cpp" />
+    <ClCompile Include="BEARVulkan\ShaderLayout.cpp" />
+    <ClCompile Include="BEARVulkan\Texture.cpp" />
+    <ClCompile Include="BEARVulkan\TLAS.cpp" />
     <ClCompile Include="Utils\FreeCamera.cpp" />
     <ClCompile Include="Utils\ConsoleLogger.cpp" />
     <ClCompile Include="Utils\Transform.cpp" />

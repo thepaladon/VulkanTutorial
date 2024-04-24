@@ -46,6 +46,7 @@
 #include "assimp/postprocess.h"
 #include "assimp/scene.h"
 
+#include "BEARHeaders/BackEndRenderer.h"
 #include "BEARHeaders/BLAS.h"
 #include "BEARHeaders/Buffer.h"
 #include "BEARHeaders/CommandList.h"
@@ -56,6 +57,11 @@
 #include "BEARHeaders/ShaderLayout.h"
 #include "BEARHeaders/Texture.h"
 #include "BEARHeaders/TLAS.h"
+
+#include "BEARVulkan/TypeDefs.h"
+#include "BEARVulkan/wVkGlobalVariables.h"
+#include "BEARVulkan/wVkHelpers.h"
+
 
 
 constexpr uint32_t WIDTH = 1600;

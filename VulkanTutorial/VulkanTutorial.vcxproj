@@ -15,6 +15,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BEARHeaders\BackEndRenderer.h" />
     <ClInclude Include="BEARHeaders\BLAS.h" />
     <ClInclude Include="BEARHeaders\Buffer.h" />
     <ClInclude Include="BEARHeaders\CommandList.h" />
@@ -25,7 +26,9 @@
     <ClInclude Include="BEARHeaders\ShaderLayout.h" />
     <ClInclude Include="BEARHeaders\Texture.h" />
     <ClInclude Include="BEARHeaders\TLAS.h" />
+    <ClInclude Include="BEARVulkan\wVkGlobalVariables.h" />
     <ClInclude Include="BEARVulkan\TypeDefs.h" />
+    <ClInclude Include="BEARVulkan\wVkHelpers.h" />
     <ClInclude Include="Utils\FreeCamera.h" />
     <ClInclude Include="Utils\ConsoleLogger.h" />
     <ClInclude Include="Utils\Transform.h" />

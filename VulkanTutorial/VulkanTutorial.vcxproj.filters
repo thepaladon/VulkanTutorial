@@ -31,48 +31,69 @@
     <Filter Include="Resource Files\GLSL">
       <UniqueIdentifier>{5dc7f038-3e70-41ce-ab03-6fa17b6fec6e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\BEAR">
+      <UniqueIdentifier>{eac902a8-2a45-40c3-a125-5ea01f118b36}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\VulkanSpecific">
+      <UniqueIdentifier>{d56ace6e-ad1f-40c5-8e54-ea5438a01ad6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Utils">
+      <UniqueIdentifier>{7029c272-fd52-4efc-9f36-1cd8c9ab2f99}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Utils">
+      <UniqueIdentifier>{53559214-27d7-4c53-8e7a-6b390c50022b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Utils\ConsoleLogger.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\FreeCamera.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\Transform.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="BEARHeaders\BLAS.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\BEAR</Filter>
     </ClInclude>
     <ClInclude Include="BEARHeaders\Buffer.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\BEAR</Filter>
     </ClInclude>
     <ClInclude Include="BEARHeaders\CommandList.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\BEAR</Filter>
     </ClInclude>
     <ClInclude Include="BEARHeaders\ComputePipelineDescription.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\BEAR</Filter>
     </ClInclude>
     <ClInclude Include="BEARHeaders\ResourceDescriptorHeap.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\BEAR</Filter>
     </ClInclude>
     <ClInclude Include="BEARHeaders\Sampler.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\BEAR</Filter>
     </ClInclude>
     <ClInclude Include="BEARHeaders\SamplerDescriptorHeap.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\BEAR</Filter>
     </ClInclude>
     <ClInclude Include="BEARHeaders\ShaderLayout.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\BEAR</Filter>
     </ClInclude>
     <ClInclude Include="BEARHeaders\Texture.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\BEAR</Filter>
     </ClInclude>
     <ClInclude Include="BEARHeaders\TLAS.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\BEAR</Filter>
     </ClInclude>
     <ClInclude Include="BEARVulkan\TypeDefs.h">
+      <Filter>Header Files\VulkanSpecific</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\ConsoleLogger.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\FreeCamera.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Transform.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="BEARVulkan\wVkGlobalVariables.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BEARVulkan\wVkHelpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BEARHeaders\BackEndRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -81,13 +102,13 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Utils\ConsoleLogger.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Utils</Filter>
     </ClCompile>
     <ClCompile Include="Utils\FreeCamera.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Utils</Filter>
     </ClCompile>
     <ClCompile Include="Utils\Transform.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Utils</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -24,6 +24,7 @@ I might do some bigger things with this or I might not. For now, I'm taking it o
  
 ## Getting Started
 It should run without issue if you have downloaded the [Vulkan SDK](https://vulkan.lunarg.com/#new_tab).
+
 I also use vcpkg only for `glm`.  You'll need to set that up. I'll fix this at some point and move `glm` to `Dependencies`.
 
 ## Controls

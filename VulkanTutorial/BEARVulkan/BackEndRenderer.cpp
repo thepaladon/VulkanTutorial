@@ -3,6 +3,7 @@
 #include "wVkGlobalVariables.h"
 #include "wVkHelpers/wVkCommands.h"
 #include "wVkHelpers/wVkImageView.h"
+#include "wVkHelpers/wVkImGui.h"
 #include "wVkHelpers/wVkInstance.h"
 #include "wVkHelpers/wVkLogicalDevice.h"
 #include "wVkHelpers/wVkPhysicalDevice.h"
@@ -81,6 +82,9 @@ void BackEndRenderer::Initialize(GLFWwindow* window, Texture** mainRenderTargets
 
 	g_CommandPool = wVkHelpers::createCommandPool();
 
+
+	wVkHelpers::initImgui(window, g_ImGuiRenderPass, g_ImguiPool);
+
 }
 
 void BackEndRenderer::EndTracing()
@@ -116,6 +120,12 @@ uint32_t BackEndRenderer::GetCurrentBackBufferIndex() const
 void BackEndRenderer::Shutdown()
 {
 	destroySwapchain();
+
+	ImGui_ImplGlfw_Shutdown();
+	ImGui_ImplVulkan_Shutdown();
+	ImGui::DestroyContext();
+	vkDestroyDescriptorPool(g_Device, g_ImguiPool, nullptr);
+	vkDestroyRenderPass(g_Device, g_ImGuiRenderPass, nullptr);
 
 	vkDestroyCommandPool(g_Device, g_CommandPool, nullptr);
 

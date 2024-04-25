@@ -123,6 +123,12 @@
     <ClInclude Include="BEARVulkan\wVkHelpers\wVkCommands.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="BEARVulkan\wVkHelpers\wVkImGui.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BEARVulkan\wVkHelpers\wVkDepth.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\VulkanTutorial.cpp">

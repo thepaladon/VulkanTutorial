@@ -32,7 +32,9 @@
     <ClInclude Include="BEARVulkan\wVkHelpers.h" />
     <ClInclude Include="BEARVulkan\wVkHelpers\wVkCommands.h" />
     <ClInclude Include="BEARVulkan\wVkHelpers\wVkDebug.h" />
+    <ClInclude Include="BEARVulkan\wVkHelpers\wVkDepth.h" />
     <ClInclude Include="BEARVulkan\wVkHelpers\wVkImageView.h" />
+    <ClInclude Include="BEARVulkan\wVkHelpers\wVkImGui.h" />
     <ClInclude Include="BEARVulkan\wVkHelpers\wVkInstance.h" />
     <ClInclude Include="BEARVulkan\wVkHelpers\wVkLogicalDevice.h" />
     <ClInclude Include="BEARVulkan\wVkHelpers\wVkPhysicalDevice.h" />

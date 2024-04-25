@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 
+#include "imgui_impl_vulkan.h"
 #include "vulkan/vulkan.h"
 
 
@@ -44,9 +45,12 @@ namespace wVkGlobals
 	extern VkQueue g_ComputeQueue;
 
 	extern wVkHelpers::wVkSwapchain g_SwapChain;
-	extern std::vector<VkImage> g_SwapChainImages; 
-	extern std::vector<VkImageView> g_SwapChainImageViews; 
+	extern std::vector<VkImage> g_SwapChainImages;
+	extern std::vector<VkImageView> g_SwapChainImageViews;
 
+	extern ImGui_ImplVulkanH_Window g_ImGuiWindow;
+	extern VkDescriptorPool g_ImguiPool;
+	extern VkRenderPass g_ImGuiRenderPass;
 
 	extern uint32_t g_RTVDescSize; // Render Target View Descriptor Size
 	extern uint32_t g_CBV_SRV_UAVDescSize; // Constant Buffer View, Shader Resource View, Unordered Access View Descriptor Size

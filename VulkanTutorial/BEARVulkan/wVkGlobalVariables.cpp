@@ -1,5 +1,6 @@
 #include "wVkGlobalVariables.h"
 
+
 namespace wVkGlobals
 {
 	// Vulkan setup
@@ -24,6 +25,11 @@ namespace wVkGlobals
 	wVkHelpers::wVkSwapchain g_SwapChain = {};
 	std::vector<VkImage> g_SwapChainImages;
 	std::vector<VkImageView> g_SwapChainImageViews;
+
+	// ImGui
+	ImGui_ImplVulkanH_Window g_ImGuiWindow;
+	VkDescriptorPool g_ImguiPool = VK_NULL_HANDLE;
+	VkRenderPass g_ImGuiRenderPass = VK_NULL_HANDLE;
 
 	// Useful variables
 	uint32_t g_MinImageCount = 0; //Gotten from createSwapchain 

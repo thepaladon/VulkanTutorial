@@ -43,6 +43,12 @@
     <Filter Include="Source Files\Utils">
       <UniqueIdentifier>{53559214-27d7-4c53-8e7a-6b390c50022b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\wVkHelpers">
+      <UniqueIdentifier>{895c8e17-04ef-4aa4-a783-d30af3620fe6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\BEAR">
+      <UniqueIdentifier>{04f83770-ec7f-49a5-bda5-cbc8dc659bd6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BEARHeaders\BLAS.h">
@@ -90,44 +96,44 @@
     <ClInclude Include="BEARVulkan\wVkGlobalVariables.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="BEARVulkan\wVkHelpers.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="BEARHeaders\BackEndRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="BEARVulkan\wVkHelpers\wVkInstance.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="BEARVulkan\wVkHelpers\wVkCommands.h">
+      <Filter>Header Files\VulkanSpecific</Filter>
     </ClInclude>
     <ClInclude Include="BEARVulkan\wVkConstants.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\VulkanSpecific</Filter>
     </ClInclude>
     <ClInclude Include="BEARVulkan\wVkHelpers\wVkDebug.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BEARVulkan\wVkHelpers\wVkPhysicalDevice.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BEARVulkan\wVkHelpers\wVkQueueFamilies.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BEARVulkan\wVkHelpers\wVkSwapchain.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BEARVulkan\wVkHelpers\wVkLogicalDevice.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BEARVulkan\wVkHelpers\wVkImageView.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BEARVulkan\wVkHelpers\wVkCommands.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BEARVulkan\wVkHelpers\wVkImGui.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\VulkanSpecific</Filter>
     </ClInclude>
     <ClInclude Include="BEARVulkan\wVkHelpers\wVkDepth.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\VulkanSpecific</Filter>
+    </ClInclude>
+    <ClInclude Include="BEARVulkan\wVkHelpers.h">
+      <Filter>Header Files\VulkanSpecific</Filter>
+    </ClInclude>
+    <ClInclude Include="BEARVulkan\wVkHelpers\wVkImageView.h">
+      <Filter>Header Files\VulkanSpecific</Filter>
+    </ClInclude>
+    <ClInclude Include="BEARVulkan\wVkHelpers\wVkImGui.h">
+      <Filter>Header Files\VulkanSpecific</Filter>
+    </ClInclude>
+    <ClInclude Include="BEARVulkan\wVkHelpers\wVkInstance.h">
+      <Filter>Header Files\VulkanSpecific</Filter>
+    </ClInclude>
+    <ClInclude Include="BEARVulkan\wVkHelpers\wVkLogicalDevice.h">
+      <Filter>Header Files\VulkanSpecific</Filter>
+    </ClInclude>
+    <ClInclude Include="BEARVulkan\wVkHelpers\wVkPhysicalDevice.h">
+      <Filter>Header Files\VulkanSpecific</Filter>
+    </ClInclude>
+    <ClInclude Include="BEARVulkan\wVkHelpers\wVkQueueFamilies.h">
+      <Filter>Header Files\VulkanSpecific</Filter>
+    </ClInclude>
+    <ClInclude Include="BEARVulkan\wVkHelpers\wVkSwapchain.h">
+      <Filter>Header Files\VulkanSpecific</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -143,41 +149,67 @@
     <ClCompile Include="Utils\Transform.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
-    <ClCompile Include="BEARVulkan\BLAS.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BEARVulkan\Buffer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BEARVulkan\CommandList.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BEARVulkan\ComputePipelineDescription.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BEARVulkan\ResourceDescriptorHeap.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BEARVulkan\Sampler.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BEARVulkan\SamplerDescriptorHeap.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BEARVulkan\ShaderLayout.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BEARVulkan\Texture.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BEARVulkan\TLAS.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="BEARVulkan\wVkGlobalVariables.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="BEARVulkan\BackEndRenderer.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="BEARVulkan\BLAS.cpp">
+      <Filter>Source Files\BEAR</Filter>
     </ClCompile>
+    <ClCompile Include="BEARVulkan\BackEndRenderer.cpp">
+      <Filter>Source Files\BEAR</Filter>
+    </ClCompile>
+    <ClCompile Include="BEARVulkan\Buffer.cpp">
+      <Filter>Source Files\BEAR</Filter>
+    </ClCompile>
+    <ClCompile Include="BEARVulkan\CommandList.cpp">
+      <Filter>Source Files\BEAR</Filter>
+    </ClCompile>
+    <ClCompile Include="BEARVulkan\ComputePipelineDescription.cpp">
+      <Filter>Source Files\BEAR</Filter>
+    </ClCompile>
+    <ClCompile Include="BEARVulkan\ResourceDescriptorHeap.cpp">
+      <Filter>Source Files\BEAR</Filter>
+    </ClCompile>
+    <ClCompile Include="BEARVulkan\Sampler.cpp">
+      <Filter>Source Files\BEAR</Filter>
+    </ClCompile>
+    <ClCompile Include="BEARVulkan\SamplerDescriptorHeap.cpp">
+      <Filter>Source Files\BEAR</Filter>
+    </ClCompile>
+    <ClCompile Include="BEARVulkan\ShaderLayout.cpp">
+      <Filter>Source Files\BEAR</Filter>
+    </ClCompile>
+    <ClCompile Include="BEARVulkan\Texture.cpp">
+      <Filter>Source Files\BEAR</Filter>
+    </ClCompile>
+    <ClCompile Include="BEARVulkan\TLAS.cpp">
+      <Filter>Source Files\BEAR</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Shaders\HLSL\compileHLSL.bat">
+      <Filter>Resource Files\HLSL</Filter>
+    </None>
+    <None Include="..\Shaders\GLSL\compileGLSL.bat">
+      <Filter>Resource Files\GLSL</Filter>
+    </None>
+    <None Include="..\Shaders\GLSL\particle.comp">
+      <Filter>Resource Files\GLSL</Filter>
+    </None>
+    <None Include="..\Shaders\GLSL\shader.frag">
+      <Filter>Resource Files\GLSL</Filter>
+    </None>
+    <None Include="..\Shaders\GLSL\shader.vert">
+      <Filter>Resource Files\GLSL</Filter>
+    </None>
+    <None Include="..\Shaders\HLSL\frag.hlsl">
+      <Filter>Resource Files\HLSL</Filter>
+    </None>
+    <None Include="..\Shaders\HLSL\particle.hlsl">
+      <Filter>Resource Files\HLSL</Filter>
+    </None>
+    <None Include="..\Shaders\HLSL\vert.hlsl">
+      <Filter>Resource Files\HLSL</Filter>
+    </None>
   </ItemGroup>
 </Project>

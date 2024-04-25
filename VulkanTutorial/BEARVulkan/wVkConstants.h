@@ -39,7 +39,7 @@ namespace wVkConstants {
 #endif
 
 
-	//#define USE_HLSL 1
+#define USE_HLSL 1
 #ifdef USE_HLSL
 	const std::string shaderDir = "Shaders/Compiled/HLSL/";
 #else

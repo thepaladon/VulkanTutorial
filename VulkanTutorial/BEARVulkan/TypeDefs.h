@@ -1,6 +1,8 @@
 #pragma once
 #include "vulkan/vulkan.h"
 
+#include "wVkConstants.h"
+
 // Naming convention
 // w - wrapper
 // Vk - Vulkan
@@ -14,7 +16,7 @@ struct wVkBuffer
 
 struct wVkCommandList
 {
-    VkCommandBuffer m_CommandBuffer = VK_NULL_HANDLE;
+    VkCommandBuffer m_CommandBuffer[wVkConstants::g_MaxFramesInFlight] = {};
 };
 
 struct wVkDescriptorHeap

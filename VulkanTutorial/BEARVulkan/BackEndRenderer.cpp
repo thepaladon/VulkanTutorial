@@ -1,6 +1,7 @@
 #include "BEARHeaders/BackEndRenderer.h"
 
 #include "wVkGlobalVariables.h"
+#include "wVkHelpers/wVkCommands.h"
 #include "wVkHelpers/wVkImageView.h"
 #include "wVkHelpers/wVkInstance.h"
 #include "wVkHelpers/wVkLogicalDevice.h"
@@ -77,6 +78,9 @@ void BackEndRenderer::Initialize(GLFWwindow* window, Texture** mainRenderTargets
 	vkGetDeviceQueue(g_Device, queueIndices.graphicsAndComputeFamily.value(), 0, &g_ComputeQueue);
 
 	createSwapchainData(window);
+
+	g_CommandPool = wVkHelpers::createCommandPool();
+
 }
 
 void BackEndRenderer::EndTracing()
@@ -113,14 +117,17 @@ void BackEndRenderer::Shutdown()
 {
 	destroySwapchain();
 
+	vkDestroyCommandPool(g_Device, g_CommandPool, nullptr);
+
 	if (wVkConstants::enableValidationLayers) {
 		wVkHelpers::DestroyDebugUtilsMessengerEXT(g_Instance, g_DebugMessenger, nullptr);
 	}
 
 	vkDestroySurfaceKHR(g_Instance, g_Surface, nullptr);
+
+	// Need to be last
 	vkDestroyDevice(g_Device, nullptr);
 	vkDestroyInstance(g_Instance, nullptr);
-
 }
 
 void BackEndRenderer::ImguiBeginFrame()

@@ -30,6 +30,7 @@
     <ClInclude Include="BEARVulkan\wVkGlobalVariables.h" />
     <ClInclude Include="BEARVulkan\TypeDefs.h" />
     <ClInclude Include="BEARVulkan\wVkHelpers.h" />
+    <ClInclude Include="BEARVulkan\wVkHelpers\wVkCommands.h" />
     <ClInclude Include="BEARVulkan\wVkHelpers\wVkDebug.h" />
     <ClInclude Include="BEARVulkan\wVkHelpers\wVkImageView.h" />
     <ClInclude Include="BEARVulkan\wVkHelpers\wVkInstance.h" />

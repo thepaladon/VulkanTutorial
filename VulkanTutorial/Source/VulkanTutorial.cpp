@@ -55,6 +55,7 @@
 #include "BEARVulkan/TypeDefs.h"
 #include "BEARVulkan/wVkGlobalVariables.h"
 #include "BEARVulkan/wVkHelpers.h"
+#include "BEARVulkan/wVkHelpers/wVkCommands.h"
 #include "BEARVulkan/wVkHelpers/wVkImageView.h"
 #include "BEARVulkan/wVkHelpers/wVkInstance.h"
 #include "BEARVulkan/wVkHelpers/wVkQueueFamilies.h"
@@ -323,41 +324,6 @@ private:
 
 	}
 
-
-	VkCommandBuffer beginSingleTimeCommand()
-	{
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		// ToDo Optimize this
-		allocInfo.commandPool = m_CommandPool;
-		allocInfo.commandBufferCount = 1;
-
-		VkCommandBuffer commandBuffer;
-		vkAllocateCommandBuffers(wVkGlobals::g_Device, &allocInfo, &commandBuffer);
-
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-		vkBeginCommandBuffer(commandBuffer, &beginInfo);
-		return commandBuffer;
-	}
-
-	void endSingleTimeCommand(VkCommandBuffer& commandBuffer)
-	{
-		vkEndCommandBuffer(commandBuffer);
-
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffer;
-
-		vkQueueSubmit(wVkGlobals::g_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-		vkQueueWaitIdle(wVkGlobals::g_GraphicsQueue);
-
-		vkFreeCommandBuffers(wVkGlobals::g_Device, m_CommandPool, 1, &commandBuffer);
-	}
 
 	void InitImgui()
 	{
@@ -859,24 +825,13 @@ private:
 		}
 	}
 
-	void createCommandPool() {
-		const wVkHelpers::QueueFamilyIndices queueFamilyIndices = wVkHelpers::findQueueFamilies(wVkGlobals::g_PhysicalDevice);
-
-		VkCommandPoolCreateInfo poolInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
-
-		if (vkCreateCommandPool(wVkGlobals::g_Device, &poolInfo, nullptr, &m_CommandPool) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create command pool!");
-		}
-	}
+	
 
 	void createCommandBuffer()
 	{
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = m_CommandPool;
+		allocInfo.commandPool = wVkGlobals::g_CommandPool;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		allocInfo.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
 
@@ -886,7 +841,7 @@ private:
 
 		VkCommandBufferAllocateInfo compAllocInfo{};
 		compAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		compAllocInfo.commandPool = m_CommandPool;
+		compAllocInfo.commandPool = wVkGlobals::g_CommandPool;
 		compAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		compAllocInfo.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
 
@@ -1069,7 +1024,7 @@ private:
 
 	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
 
-		VkCommandBuffer commandBuffer = beginSingleTimeCommand();
+		VkCommandBuffer commandBuffer = wVkHelpers::beginSingleTimeCommand();
 
 		VkBufferCopy copyRegion{};
 		copyRegion.srcOffset = 0; // Optional
@@ -1077,7 +1032,7 @@ private:
 		copyRegion.size = size;
 		vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-		endSingleTimeCommand(commandBuffer);
+		wVkHelpers::endSingleTimeCommand(commandBuffer);
 	}
 
 	void createVertexBuffer()
@@ -1299,7 +1254,7 @@ private:
 	void transitionImageLayout(VkImage image, VkFormat format, uint32_t mipLevels, VkImageLayout oldLayout, VkImageLayout newLayout) {
 
 		// ToDo, move this out to be able to pass multiple transitions into 1 Command Buffer
-		VkCommandBuffer commandBuffer = beginSingleTimeCommand();
+		VkCommandBuffer commandBuffer = wVkHelpers::beginSingleTimeCommand();
 
 		VkImageMemoryBarrier barrier{};
 		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -1346,7 +1301,7 @@ private:
 		);
 
 
-		endSingleTimeCommand(commandBuffer);
+		wVkHelpers::endSingleTimeCommand(commandBuffer);
 
 
 	}
@@ -1354,7 +1309,7 @@ private:
 	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
 
 		// ToDo, move this out to be able to pass multiple transitions into 1 Command Buffer
-		VkCommandBuffer commandBuffer = beginSingleTimeCommand();
+		VkCommandBuffer commandBuffer = wVkHelpers::beginSingleTimeCommand();
 
 		VkBufferImageCopy region{};
 		region.bufferOffset = 0;
@@ -1382,7 +1337,7 @@ private:
 			&region
 		);
 
-		endSingleTimeCommand(commandBuffer);
+		wVkHelpers::endSingleTimeCommand(commandBuffer);
 	}
 
 	void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels) {
@@ -1395,7 +1350,7 @@ private:
 			throw std::runtime_error("texture image format does not support linear blitting!");
 		}
 
-		VkCommandBuffer commandBuffer = beginSingleTimeCommand();
+		VkCommandBuffer commandBuffer = wVkHelpers::beginSingleTimeCommand();
 
 		VkImageMemoryBarrier barrier{};
 		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -1472,7 +1427,7 @@ private:
 			0, nullptr,
 			1, &barrier);
 
-		endSingleTimeCommand(commandBuffer);
+		wVkHelpers::endSingleTimeCommand(commandBuffer);
 	}
 
 
@@ -1798,9 +1753,6 @@ private:
 
 		m_BackEndRenderer.Initialize(m_Window, nullptr, nullptr);
 
-
-		createCommandPool();
-
 		createUniformBuffers();
 		createDtBuffers();
 
@@ -2091,10 +2043,7 @@ private:
 		// Wait until everything is completed until we clean-up
 		vkDeviceWaitIdle(wVkGlobals::g_Device);
 
-
-
 		cleanupImGui();
-
 	
 		vkDestroyDescriptorSetLayout(wVkGlobals::g_Device, m_DescSetLayout, nullptr);
 		vkDestroyDescriptorPool(wVkGlobals::g_Device, m_DescPool, nullptr);
@@ -2132,7 +2081,6 @@ private:
 		vkDestroyBuffer(wVkGlobals::g_Device, m_IndexBuffer, nullptr);
 		vkFreeMemory(wVkGlobals::g_Device, m_IndexBufferMemory, nullptr);
 
-		vkDestroyCommandPool(wVkGlobals::g_Device, m_CommandPool, nullptr);
 
 		vkDestroyPipeline(wVkGlobals::g_Device, m_ComputePipeline, nullptr);
 		vkDestroyPipelineLayout(wVkGlobals::g_Device, m_ComputePipelineLayout, nullptr);
@@ -2155,10 +2103,6 @@ private:
 
 	}
 
-	
-
-
-
 	uint32_t currentFrame = 0;
 	Transform cubeModel;
 
@@ -2172,13 +2116,11 @@ private:
 	VkRenderPass m_ImGuiRenderPass = VK_NULL_HANDLE;
 
 	// Commands
-	VkCommandPool m_CommandPool = VK_NULL_HANDLE;
 	VkCommandBuffer m_CommandBuffer[MAX_FRAMES_IN_FLIGHT] = {};
 	VkCommandBuffer m_ComputeCommandBuffer[MAX_FRAMES_IN_FLIGHT] = {};
 
 	std::vector<VkFramebuffer> m_SwapChainFramebuffers;
 	// Describes everything in the image: 2D/3D, mipmaps, depth buffer(?) etc.
-
 
 	// Depth
 	VkImage m_DepthImage = VK_NULL_HANDLE;

@@ -120,6 +120,9 @@
     <ClInclude Include="BEARVulkan\wVkHelpers\wVkImageView.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="BEARVulkan\wVkHelpers\wVkCommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\VulkanTutorial.cpp">

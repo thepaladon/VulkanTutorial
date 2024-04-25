@@ -10,7 +10,6 @@ namespace wVkGlobals
 	extern VkDevice g_Device;
 	extern VkPhysicalDevice g_PhysicalDevice; // Assuming you need access to the physical device
 	extern VkInstance g_Instance;
-	extern VkQueue g_Queue;
 	extern VkCommandPool g_CommandPool;
 	extern VkCommandBuffer g_CommandBuffer;
 	extern VkSwapchainKHR g_SwapChain;
@@ -20,11 +19,12 @@ namespace wVkGlobals
 
 	extern VkDebugUtilsMessengerEXT g_DebugMessenger;
 
-	// Screen
 	extern VkSurfaceKHR g_Surface;
 
-
-
+	// These all evaluate to the same queue on my machine
+	extern VkQueue g_GraphicsQueue;
+	extern VkQueue g_PresentQueue;
+	extern VkQueue g_ComputeQueue;
 
 
 	extern uint32_t g_RTVDescSize; // Render Target View Descriptor Size

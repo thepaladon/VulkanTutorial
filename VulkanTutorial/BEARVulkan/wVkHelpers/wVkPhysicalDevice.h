@@ -73,6 +73,5 @@ namespace wVkHelpers {
 		VK_LOG_ERROR("Failed to find a suitable GPU!");
 		throw std::runtime_error("");
 		return VK_NULL_HANDLE;
-
 	}
 }

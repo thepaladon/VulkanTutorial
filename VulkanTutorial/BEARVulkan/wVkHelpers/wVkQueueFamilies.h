@@ -14,7 +14,6 @@ namespace wVkHelpers {
 		bool isComplete() {
 			return graphicsFamily.has_value() && presentFamily.has_value() && graphicsAndComputeFamily.has_value();
 		}
-
 	};
 
 	inline QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {

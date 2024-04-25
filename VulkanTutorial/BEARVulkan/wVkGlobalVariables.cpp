@@ -18,6 +18,10 @@ namespace wVkGlobals
 
 	uint32_t g_CurrentImageIndex = 0;
 
+	VkQueue g_GraphicsQueue = VK_NULL_HANDLE;
+	VkQueue g_PresentQueue = VK_NULL_HANDLE;
+	VkQueue g_ComputeQueue = VK_NULL_HANDLE;
+
 	// Useful variables
 	uint32_t g_FrameIndex = 0;
 	uint32_t g_RTVDescSize = 0;

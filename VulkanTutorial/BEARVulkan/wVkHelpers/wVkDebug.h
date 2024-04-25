@@ -97,13 +97,12 @@ namespace wVkHelpers {
 
 	inline VkDebugUtilsMessengerEXT setupDebugMessenger() {
 
-		VkDebugUtilsMessengerEXT debugMessenger;
-
-		if (!wVkConstants::enableValidationLayers) return debugMessenger;
+		if constexpr (!wVkConstants::enableValidationLayers) return VK_NULL_HANDLE;
 
 		VkDebugUtilsMessengerCreateInfoEXT createInfo;
 		wVkHelpers::populateDebugMessengerCreateInfo(createInfo);
 
+		VkDebugUtilsMessengerEXT debugMessenger;
 		if (CreateDebugUtilsMessengerEXT(wVkGlobals::g_Instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
 			throw std::runtime_error("failed to set up debug messenger!");
 		}

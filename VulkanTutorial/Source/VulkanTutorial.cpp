@@ -1441,31 +1441,37 @@ private:
 
 	void createComputeDescriptorSetup()
 	{
-		std::array<VkDescriptorSetLayoutBinding, 3> layoutBindings{};
-		layoutBindings[0].binding = 0;
-		layoutBindings[0].descriptorCount = 1;
-		layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		layoutBindings[0].pImmutableSamplers = nullptr;
-		layoutBindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		VkDescriptorSetLayoutBinding layoutBindingsUbo{};
+		layoutBindingsUbo.binding = 0;
+		layoutBindingsUbo.descriptorCount = 1;
+		layoutBindingsUbo.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		layoutBindingsUbo.pImmutableSamplers = nullptr;
+		layoutBindingsUbo.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
-		layoutBindings[1].binding = 1;
-		layoutBindings[1].descriptorCount = 1;
-		layoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		layoutBindings[1].pImmutableSamplers = nullptr;
-		layoutBindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		VkDescriptorSetLayoutBinding layoutBindingsStorage{};
+		layoutBindingsStorage.binding = 0;
+		layoutBindingsStorage.descriptorCount = 1;
+		layoutBindingsStorage.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		layoutBindingsStorage.pImmutableSamplers = nullptr;
+		layoutBindingsStorage.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
-		layoutBindings[2].binding = 2;
-		layoutBindings[2].descriptorCount = 1;
-		layoutBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		layoutBindings[2].pImmutableSamplers = nullptr;
-		layoutBindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
 		VkDescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = 3;
-		layoutInfo.pBindings = layoutBindings.data();
+		layoutInfo.bindingCount = 1;
+		layoutInfo.pBindings = &layoutBindingsUbo;
 
-		if (vkCreateDescriptorSetLayout(wVkGlobals::g_Device, &layoutInfo, nullptr, &m_ComputeDescriptorSetLayout) != VK_SUCCESS) {
+		if (vkCreateDescriptorSetLayout(wVkGlobals::g_Device, &layoutInfo, nullptr, &m_ComputeDescriptorSetLayoutUbo) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create compute descriptor set layout!");
+		}
+
+		layoutInfo.pBindings = &layoutBindingsStorage;
+		if (vkCreateDescriptorSetLayout(wVkGlobals::g_Device, &layoutInfo, nullptr, &m_ComputeDescriptorSetLayoutRead) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create compute descriptor set layout!");
+		}
+
+		layoutInfo.pBindings = &layoutBindingsStorage;
+		if (vkCreateDescriptorSetLayout(wVkGlobals::g_Device, &layoutInfo, nullptr, &m_ComputeDescriptorSetLayoutWrite) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create compute descriptor set layout!");
 		}
 
@@ -1475,7 +1481,7 @@ private:
 	{
 		std::array<VkDescriptorPoolSize, 2> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = static_cast<uint32_t>(wVkConstants::g_MaxFramesInFlight);
+		poolSizes[0].descriptorCount = static_cast<uint32_t>(wVkConstants::g_MaxFramesInFlight) * 1;
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		poolSizes[1].descriptorCount = static_cast<uint32_t>(wVkConstants::g_MaxFramesInFlight) * 2;
 
@@ -1483,7 +1489,7 @@ private:
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 		poolInfo.pPoolSizes = poolSizes.data();
-		poolInfo.maxSets = static_cast<uint32_t>(wVkConstants::g_MaxFramesInFlight);
+		poolInfo.maxSets = static_cast<uint32_t>(wVkConstants::g_MaxFramesInFlight * 3);
 
 
 		if (vkCreateDescriptorPool(wVkGlobals::g_Device, &poolInfo, nullptr, &m_ComputeDescPool) != VK_SUCCESS) {
@@ -1493,17 +1499,32 @@ private:
 
 	void createComputeDescriptorSets() {
 
-		const std::vector<VkDescriptorSetLayout> layouts(wVkConstants::g_MaxFramesInFlight, m_ComputeDescriptorSetLayout);
+		const std::vector<VkDescriptorSetLayout> layoutsUbo(wVkConstants::g_MaxFramesInFlight, m_ComputeDescriptorSetLayoutUbo);
+		const std::vector<VkDescriptorSetLayout> layoutsRead(wVkConstants::g_MaxFramesInFlight, m_ComputeDescriptorSetLayoutRead);
+		const std::vector<VkDescriptorSetLayout> layoutsWrite(wVkConstants::g_MaxFramesInFlight, m_ComputeDescriptorSetLayoutWrite);
 
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool = m_ComputeDescPool;
-		allocInfo.descriptorSetCount = static_cast<uint32_t>(wVkConstants::g_MaxFramesInFlight);
-		allocInfo.pSetLayouts = layouts.data();
+		allocInfo.descriptorSetCount = static_cast<uint32_t>(wVkConstants::g_MaxFramesInFlight );
+		allocInfo.pSetLayouts = layoutsUbo.data();
 
-		m_ComputeDescriptorSets.resize(wVkConstants::g_MaxFramesInFlight);
-		if (vkAllocateDescriptorSets(wVkGlobals::g_Device, &allocInfo, m_ComputeDescriptorSets.data()) != VK_SUCCESS) {
-			throw std::runtime_error("failed to allocate compute descriptor sets!");
+		m_ComputeDescriptorSetsUbo.resize(wVkConstants::g_MaxFramesInFlight);
+		m_ComputeDescriptorSetsRead.resize(wVkConstants::g_MaxFramesInFlight);
+		m_ComputeDescriptorSetsWrite.resize(wVkConstants::g_MaxFramesInFlight);
+
+		if (vkAllocateDescriptorSets(wVkGlobals::g_Device, &allocInfo, m_ComputeDescriptorSetsUbo.data()) != VK_SUCCESS) {
+			throw std::runtime_error("1 failed to allocate compute descriptor sets!");
+		}
+
+		allocInfo.pSetLayouts = layoutsRead.data();
+		if (vkAllocateDescriptorSets(wVkGlobals::g_Device, &allocInfo, m_ComputeDescriptorSetsRead.data()) != VK_SUCCESS) {
+			throw std::runtime_error("2 failed to allocate compute descriptor sets!");
+		}
+
+		allocInfo.pSetLayouts = layoutsWrite.data();
+		if (vkAllocateDescriptorSets(wVkGlobals::g_Device, &allocInfo, m_ComputeDescriptorSetsWrite.data()) != VK_SUCCESS) {
+			throw std::runtime_error("3 failed to allocate compute descriptor sets!");
 		}
 
 		for (size_t i = 0; i < wVkConstants::g_MaxFramesInFlight; i++) {
@@ -1514,7 +1535,7 @@ private:
 
 			std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = m_ComputeDescriptorSets[i];
+			descriptorWrites[0].dstSet = m_ComputeDescriptorSetsUbo[i];
 			descriptorWrites[0].dstBinding = 0;
 			descriptorWrites[0].dstArrayElement = 0;
 			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -1527,8 +1548,8 @@ private:
 			storageBufferInfoLastFrame.range = sizeof(Particle) * PARTICLE_COUNT;
 
 			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstSet = m_ComputeDescriptorSets[i];
-			descriptorWrites[1].dstBinding = 1;
+			descriptorWrites[1].dstSet = m_ComputeDescriptorSetsRead[i];
+			descriptorWrites[1].dstBinding = 0;
 			descriptorWrites[1].dstArrayElement = 0;
 			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			descriptorWrites[1].descriptorCount = 1;
@@ -1540,8 +1561,8 @@ private:
 			storageBufferInfoCurrentFrame.range = sizeof(Particle) * PARTICLE_COUNT;
 
 			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[2].dstSet = m_ComputeDescriptorSets[i];
-			descriptorWrites[2].dstBinding = 2;
+			descriptorWrites[2].dstSet = m_ComputeDescriptorSetsWrite[i];
+			descriptorWrites[2].dstBinding = 0;
 			descriptorWrites[2].dstArrayElement = 0;
 			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			descriptorWrites[2].descriptorCount = 1;
@@ -1563,11 +1584,11 @@ private:
 		computeShaderStageInfo.module = m_ParticleShaderModule;
 		computeShaderStageInfo.pName = "main";
 
-
+		VkDescriptorSetLayout layout[3] = { m_ComputeDescriptorSetLayoutUbo, m_ComputeDescriptorSetLayoutRead, m_ComputeDescriptorSetLayoutWrite};
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &m_ComputeDescriptorSetLayout;
+		pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(std::size(layout));
+		pipelineLayoutInfo.pSetLayouts = layout;
 
 		if (vkCreatePipelineLayout(wVkGlobals::g_Device, &pipelineLayoutInfo, nullptr, &m_ComputePipelineLayout) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create compute pipeline layout!");
@@ -1577,6 +1598,7 @@ private:
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
 		pipelineInfo.layout = m_ComputePipelineLayout;
 		pipelineInfo.stage = computeShaderStageInfo;
+		
 
 		if (vkCreateComputePipelines(wVkGlobals::g_Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_ComputePipeline) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create compute pipeline!");
@@ -1665,7 +1687,10 @@ private:
 		}
 
 		vkCmdBindPipeline(compCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline);
-		vkCmdBindDescriptorSets(compCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipelineLayout, 0, 1, &m_ComputeDescriptorSets[currentFrame], 0, 0);
+		vkCmdBindDescriptorSets(compCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipelineLayout, 0, 1, &m_ComputeDescriptorSetsUbo[currentFrame], 0, 0);
+		vkCmdBindDescriptorSets(compCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipelineLayout, 1, 1, &m_ComputeDescriptorSetsRead[currentFrame], 0, 0);
+		vkCmdBindDescriptorSets(compCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipelineLayout, 2, 1, &m_ComputeDescriptorSetsWrite[currentFrame], 0, 0);
+
 		vkCmdDispatch(compCommandBuffer, PARTICLE_COUNT / 256, 1, 1);
 
 		VkSubmitInfo compSubmitInfo{};
@@ -1880,7 +1905,9 @@ private:
 		vkDestroyDescriptorSetLayout(wVkGlobals::g_Device, m_DescSetLayout, nullptr);
 		vkDestroyDescriptorPool(wVkGlobals::g_Device, m_DescPool, nullptr);
 
-		vkDestroyDescriptorSetLayout(wVkGlobals::g_Device, m_ComputeDescriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(wVkGlobals::g_Device, m_ComputeDescriptorSetLayoutUbo, nullptr);
+		vkDestroyDescriptorSetLayout(wVkGlobals::g_Device, m_ComputeDescriptorSetLayoutRead, nullptr);
+		vkDestroyDescriptorSetLayout(wVkGlobals::g_Device, m_ComputeDescriptorSetLayoutWrite, nullptr);
 		vkDestroyDescriptorPool(wVkGlobals::g_Device, m_ComputeDescPool, nullptr);
 
 		for (size_t i = 0; i < wVkConstants::g_MaxFramesInFlight; i++) {
@@ -2001,9 +2028,15 @@ private:
 	// Compute Stuff
 	std::vector<VkBuffer> m_ShaderStorageBuffers = {};
 	std::vector<VkDeviceMemory> m_ShaderStorageBuffersMemory = {};
-	VkDescriptorSetLayout m_ComputeDescriptorSetLayout = VK_NULL_HANDLE;
+	VkDescriptorSetLayout m_ComputeDescriptorSetLayoutUbo = VK_NULL_HANDLE;
+	VkDescriptorSetLayout m_ComputeDescriptorSetLayoutRead = VK_NULL_HANDLE;
+	VkDescriptorSetLayout m_ComputeDescriptorSetLayoutWrite = VK_NULL_HANDLE;
+
 	VkDescriptorPool m_ComputeDescPool = VK_NULL_HANDLE;
-	std::vector<VkDescriptorSet> m_ComputeDescriptorSets;
+
+	std::vector<VkDescriptorSet> m_ComputeDescriptorSetsUbo;
+	std::vector<VkDescriptorSet> m_ComputeDescriptorSetsRead;
+	std::vector<VkDescriptorSet> m_ComputeDescriptorSetsWrite;
 
 	VkShaderModule m_ParticleShaderModule = VK_NULL_HANDLE;
 	VkPipelineLayout m_ComputePipelineLayout = VK_NULL_HANDLE;

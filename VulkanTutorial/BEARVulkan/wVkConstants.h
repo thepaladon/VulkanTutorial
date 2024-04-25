@@ -7,6 +7,7 @@
 namespace wVkConstants {
 
 	// Useful variables
+	//#define USE_HLSL 1
 	constexpr uint32_t g_MaxFramesInFlight = 2; // Assuming you manage multiple frames in flight
 	constexpr uint32_t g_NumSwapChainImages = 2;
 
@@ -39,7 +40,6 @@ namespace wVkConstants {
 #endif
 
 
-#define USE_HLSL 1
 #ifdef USE_HLSL
 	const std::string shaderDir = "Shaders/Compiled/HLSL/";
 #else

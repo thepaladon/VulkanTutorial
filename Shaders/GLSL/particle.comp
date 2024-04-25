@@ -1,6 +1,6 @@
 #version 450
 
-layout (binding = 0) uniform ParameterUBO {
+layout (set = 0, binding = 0) uniform ParameterUBO {
     float deltaTime;
 } ubo;
 
@@ -10,11 +10,11 @@ struct Particle {
 	vec3 velocity;
 };
 
-layout(std140 , binding = 1) readonly buffer ParticleSSBOIn {
+layout(std140 , set = 1, binding = 0) readonly buffer ParticleSSBOIn {
    Particle particlesIn[ ];
 };
 
-layout(std140 , binding = 2) buffer ParticleSSBOOut {
+layout(std140 , set = 2, binding = 0) buffer ParticleSSBOOut {
    Particle particlesOut[ ];
 };
 

@@ -1,8 +1,26 @@
 #pragma once
+#include <vector>
+
 #include "vulkan/vulkan.h"
+
+
+namespace wVkHelpers
+{
+	// ToDo: This doesn't feel right
+	// Consider making this SwapChainData and removing VkSwapchainKHR
+	struct wVkSwapchain
+	{
+		VkSwapchainKHR swapChain = VK_NULL_HANDLE;
+		VkFormat swapChainImageFormat = {};
+		VkExtent2D swapChainExtent = {};
+		uint32_t minImageCount = 0;
+		uint32_t imageCount = 0;
+	};
+}
 
 namespace wVkGlobals
 {
+
 	// Break the program at the start of the new frame if an issue has been found
 	static bool g_errorValidationLayerTriggered = false;
 
@@ -12,7 +30,6 @@ namespace wVkGlobals
 	extern VkInstance g_Instance;
 	extern VkCommandPool g_CommandPool;
 	extern VkCommandBuffer g_CommandBuffer;
-	extern VkSwapchainKHR g_SwapChain;
 	extern uint32_t g_CurrentImageIndex;
 	extern VkRenderPass g_RenderPass;
 	extern VkFormat g_ColorFormat;
@@ -25,6 +42,10 @@ namespace wVkGlobals
 	extern VkQueue g_GraphicsQueue;
 	extern VkQueue g_PresentQueue;
 	extern VkQueue g_ComputeQueue;
+
+	extern wVkHelpers::wVkSwapchain g_SwapChain;
+	extern std::vector<VkImage> g_SwapChainImages; 
+	extern std::vector<VkImageView> g_SwapChainImageViews; 
 
 
 	extern uint32_t g_RTVDescSize; // Render Target View Descriptor Size

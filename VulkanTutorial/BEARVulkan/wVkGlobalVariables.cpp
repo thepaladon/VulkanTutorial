@@ -9,7 +9,6 @@ namespace wVkGlobals
 	VkQueue g_Queue = VK_NULL_HANDLE;
 	VkCommandPool g_CommandPool = VK_NULL_HANDLE;
 	VkCommandBuffer g_CommandBuffer = VK_NULL_HANDLE;
-	VkSwapchainKHR g_SwapChain = VK_NULL_HANDLE;
 	VkRenderPass g_RenderPass = VK_NULL_HANDLE;
 	VkFormat g_ColorFormat = {};
 
@@ -22,7 +21,12 @@ namespace wVkGlobals
 	VkQueue g_PresentQueue = VK_NULL_HANDLE;
 	VkQueue g_ComputeQueue = VK_NULL_HANDLE;
 
+	wVkHelpers::wVkSwapchain g_SwapChain = {};
+	std::vector<VkImage> g_SwapChainImages;
+	std::vector<VkImageView> g_SwapChainImageViews;
+
 	// Useful variables
+	uint32_t g_MinImageCount = 0; //Gotten from createSwapchain 
 	uint32_t g_FrameIndex = 0;
 	uint32_t g_RTVDescSize = 0;
 	uint32_t g_CBV_SRV_UAVDescSize = 0;

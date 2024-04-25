@@ -55,6 +55,7 @@
 #include "BEARVulkan/TypeDefs.h"
 #include "BEARVulkan/wVkGlobalVariables.h"
 #include "BEARVulkan/wVkHelpers.h"
+#include "BEARVulkan/wVkHelpers/wVkImageView.h"
 #include "BEARVulkan/wVkHelpers/wVkInstance.h"
 #include "BEARVulkan/wVkHelpers/wVkQueueFamilies.h"
 #include "BEARVulkan/wVkHelpers/wVkSwapchain.h"
@@ -372,7 +373,7 @@ private:
 
 		// ToDo, make the render pass set-up here same as in Swapchain
 		VkAttachmentDescription colAttachment = {};
-		colAttachment.format = m_SwapChainImageFormat;
+		colAttachment.format = wVkGlobals::g_SwapChain.swapChainImageFormat;
 		colAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 		colAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 		colAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -426,7 +427,6 @@ private:
 			throw std::runtime_error("Could not create Dear ImGui's render pass");
 		}
 
-
 		wVkHelpers::QueueFamilyIndices indices = wVkHelpers::findQueueFamilies(wVkGlobals::g_PhysicalDevice);
 		assert(indices.isComplete());
 
@@ -469,8 +469,8 @@ private:
 		init_info.PipelineCache = VK_NULL_HANDLE;
 		init_info.DescriptorPool = m_ImguiPool;
 		init_info.Allocator = VK_NULL_HANDLE;
-		init_info.MinImageCount = m_MinImageCount;
-		init_info.ImageCount = m_MinImageCount + 1;
+		init_info.MinImageCount = wVkGlobals::g_SwapChain.minImageCount;
+		init_info.ImageCount = wVkGlobals::g_SwapChain.imageCount;
 		init_info.CheckVkResultFn = VK_NULL_HANDLE;
 		init_info.RenderPass = m_ImGuiRenderPass;
 		ImGui_ImplVulkan_Init(&init_info);
@@ -488,78 +488,9 @@ private:
 		vkDestroyRenderPass(wVkGlobals::g_Device, m_ImGuiRenderPass, nullptr);
 	}
 
+
+
 	
-
-	void createSwapChain() {
-		const wVkHelpers::SwapChainSupportDetails swapChainSupport = wVkHelpers::querySwapChainSupport(wVkGlobals::g_PhysicalDevice);
-
-		const VkSurfaceFormatKHR surfaceFormat = wVkHelpers::chooseSwapSurfaceFormat(swapChainSupport.formats);
-		const VkPresentModeKHR presentMode = wVkHelpers::chooseSwapPresentMode(swapChainSupport.presentModes);
-		const VkExtent2D extent = wVkHelpers::chooseSwapExtent(swapChainSupport.capabilities, m_Window);
-
-		m_MinImageCount = swapChainSupport.capabilities.minImageCount;
-		uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-
-		if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
-			imageCount = swapChainSupport.capabilities.maxImageCount;
-		}
-
-		VkSwapchainCreateInfoKHR createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		createInfo.surface = wVkGlobals::g_Surface;
-		createInfo.minImageCount = imageCount;
-		createInfo.imageFormat = surfaceFormat.format;
-		createInfo.imageColorSpace = surfaceFormat.colorSpace;
-		createInfo.imageExtent = extent;
-		createInfo.imageArrayLayers = 1;
-		// The imageUsage bit field specifies what kind of operations we'll use the images in the swap chain 
-		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-		// This places it directly at the output, for after-use (ex:post-processing) another flag is required 
-
-		const wVkHelpers::QueueFamilyIndices indices = wVkHelpers::findQueueFamilies(wVkGlobals::g_PhysicalDevice);
-		const uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
-
-		// This is pretty consistent, check [VkTutorial](https://vulkan-tutorial.com/en/Drawing_a_triangle/Presentation/Swap_chain)
-		// if you need to touch this
-		if (indices.graphicsFamily != indices.presentFamily) {
-			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-			createInfo.queueFamilyIndexCount = 2;
-			createInfo.pQueueFamilyIndices = queueFamilyIndices;
-		}
-		else {
-			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-			createInfo.queueFamilyIndexCount = 0; // Optional
-			createInfo.pQueueFamilyIndices = nullptr; // Optional
-		}
-
-		createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
-		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-		createInfo.presentMode = presentMode;
-		createInfo.clipped = VK_FALSE;
-
-		// For swapchain recreation, ex:resizing
-		// Ref: https://vulkan-tutorial.com/en/Drawing_a_triangle/Swap_chain_recreation
-		createInfo.oldSwapchain = VK_NULL_HANDLE;
-
-		if (vkCreateSwapchainKHR(wVkGlobals::g_Device, &createInfo, nullptr, &m_SwapChain) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create swap chain!");
-		}
-
-		m_SwapChainImageFormat = surfaceFormat.format;
-		m_SwapChainExtent = extent;
-
-		vkGetSwapchainImagesKHR(wVkGlobals::g_Device, m_SwapChain, &imageCount, nullptr);
-		m_SwapChainImages.resize(imageCount);
-		vkGetSwapchainImagesKHR(wVkGlobals::g_Device, m_SwapChain, &imageCount, m_SwapChainImages.data());
-	}
-
-	void createImageViews() {
-		m_SwapChainImageViews.resize(m_SwapChainImages.size());
-
-		for (uint32_t i = 0; i < m_SwapChainImages.size(); i++) {
-			m_SwapChainImageViews[i] = createImageView(m_SwapChainImages[i], 1, m_SwapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
-		}
-	}
 
 	VkShaderModule createShaderModule(const std::vector<char>& code) {
 
@@ -762,7 +693,7 @@ private:
 	void createRenderPass() {
 
 		VkAttachmentDescription colorAttachment{};
-		colorAttachment.format = m_SwapChainImageFormat;
+		colorAttachment.format = wVkGlobals::g_SwapChain.swapChainImageFormat;
 		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 
 		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -905,11 +836,11 @@ private:
 	}
 
 	void createFramebuffers() {
-		m_SwapChainFramebuffers.resize(m_SwapChainImageViews.size());
+		m_SwapChainFramebuffers.resize(wVkGlobals::g_SwapChainImageViews.size());
 
-		for (size_t i = 0; i < m_SwapChainImageViews.size(); i++) {
+		for (size_t i = 0; i < wVkGlobals::g_SwapChainImageViews.size(); i++) {
 			std::array<VkImageView, 2> attachments = {
-				m_SwapChainImageViews[i],
+				wVkGlobals::g_SwapChainImageViews[i],
 				m_DepthImageView
 			};
 
@@ -918,8 +849,8 @@ private:
 			framebufferInfo.renderPass = m_RenderPass;
 			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 			framebufferInfo.pAttachments = attachments.data();
-			framebufferInfo.width = m_SwapChainExtent.width;
-			framebufferInfo.height = m_SwapChainExtent.height;
+			framebufferInfo.width = wVkGlobals::g_SwapChain.swapChainExtent.width;
+			framebufferInfo.height = wVkGlobals::g_SwapChain.swapChainExtent.height;
 			framebufferInfo.layers = 1;
 
 			if (vkCreateFramebuffer(wVkGlobals::g_Device, &framebufferInfo, nullptr, &m_SwapChainFramebuffers[i]) != VK_SUCCESS) {
@@ -980,7 +911,7 @@ private:
 		renderPassInfo.framebuffer = m_SwapChainFramebuffers[imageIndex];
 
 		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = m_SwapChainExtent;
+		renderPassInfo.renderArea.extent = wVkGlobals::g_SwapChain.swapChainExtent;
 
 		std::array<VkClearValue, 2> clearValues{};
 		clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
@@ -997,15 +928,15 @@ private:
 		VkViewport viewport{};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(m_SwapChainExtent.width);
-		viewport.height = static_cast<float>(m_SwapChainExtent.height);
+		viewport.width = static_cast<float>(wVkGlobals::g_SwapChain.swapChainExtent.width);
+		viewport.height = static_cast<float>(wVkGlobals::g_SwapChain.swapChainExtent.height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
 		VkRect2D scissor{};
 		scissor.offset = { 0, 0 };
-		scissor.extent = m_SwapChainExtent;
+		scissor.extent = wVkGlobals::g_SwapChain.swapChainExtent;
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
 		VkBuffer vertexBuffers[] = { m_VertexBuffer };
@@ -1033,7 +964,7 @@ private:
 			info.renderPass = m_ImGuiRenderPass;
 			info.framebuffer = m_SwapChainFramebuffers[imageIndex];
 			info.renderArea.offset = { 0 , 0 };
-			info.renderArea.extent = m_SwapChainExtent;
+			info.renderArea.extent = wVkGlobals::g_SwapChain.swapChainExtent;
 			info.clearValueCount = static_cast<uint32_t>(clearValues.size());
 			info.pClearValues = clearValues.data();
 			vkCmdBeginRenderPass(commandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
@@ -1077,9 +1008,8 @@ private:
 		vkDeviceWaitIdle(wVkGlobals::g_Device);
 
 		destroySwapchain();
+		m_BackEndRenderer.ResizeFrameBuffers(m_Window);
 
-		createSwapChain();
-		createImageViews();
 		createDepthResources();
 		createFramebuffers();
 	}
@@ -1090,10 +1020,7 @@ private:
 			vkDestroyFramebuffer(wVkGlobals::g_Device, framebuffer, nullptr);
 		}
 
-		for (const auto imageView : m_SwapChainImageViews) {
-			vkDestroyImageView(wVkGlobals::g_Device, imageView, nullptr);
-		}
-		vkDestroySwapchainKHR(wVkGlobals::g_Device, m_SwapChain, nullptr);
+		// moved to m_BackEndRenderer.ResizeFrameBuffers(m_Window);
 
 		vkDestroyImageView(wVkGlobals::g_Device, m_DepthImageView, nullptr);
 		vkDestroyImage(wVkGlobals::g_Device, m_DepthImage, nullptr);
@@ -1591,29 +1518,11 @@ private:
 		vkFreeMemory(wVkGlobals::g_Device, stagingBufferMemory, nullptr);
 	}
 
-	VkImageView createImageView(VkImage image, uint32_t mipLevels, VkFormat format, VkImageAspectFlags aspectMask) {
-		VkImageViewCreateInfo viewInfo{};
-		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		viewInfo.image = image;
-		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.format = format;
-		viewInfo.subresourceRange.aspectMask = aspectMask;
-		viewInfo.subresourceRange.baseMipLevel = 0;
-		viewInfo.subresourceRange.levelCount = mipLevels;
-		viewInfo.subresourceRange.baseArrayLayer = 0;
-		viewInfo.subresourceRange.layerCount = 1;
 
-		VkImageView imageView;
-		if (vkCreateImageView(wVkGlobals::g_Device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create texture image view!");
-		}
-
-		return imageView;
-	}
 
 	void createTextureImageView()
 	{
-		m_TextureImageView = createImageView(m_TextureImage, m_TexMipLevels, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+		m_TextureImageView = wVkHelpers::createImageView(m_TextureImage, m_TexMipLevels, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 
 	void createTextureSampler()
@@ -1677,9 +1586,10 @@ private:
 	{
 		const VkFormat depthFormat = findDepthFormat();
 
-		createImage2D(m_SwapChainExtent.width, m_SwapChainExtent.height, 1, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthImage, m_DepthImageMemory);
+		const auto& ext = wVkGlobals::g_SwapChain.swapChainExtent;
+		createImage2D(ext.width, ext.height, 1, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthImage, m_DepthImageMemory);
 
-		m_DepthImageView = createImageView(m_DepthImage, 1, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+		m_DepthImageView = wVkHelpers::createImageView(m_DepthImage, 1, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 	}
 
 	void createShaderStorageBuffers()
@@ -1888,8 +1798,6 @@ private:
 
 		m_BackEndRenderer.Initialize(m_Window, nullptr, nullptr);
 
-		createSwapChain();
-		createImageViews();
 
 		createCommandPool();
 
@@ -1998,7 +1906,7 @@ private:
 
 		uint32_t imageIndex;
 		const auto imageAvailableS = m_ImageAvailableSemaphore[currentFrame];
-		res = vkAcquireNextImageKHR(wVkGlobals::g_Device, m_SwapChain, UINT64_MAX, imageAvailableS, VK_NULL_HANDLE, &imageIndex);
+		res = vkAcquireNextImageKHR(wVkGlobals::g_Device, wVkGlobals::g_SwapChain.swapChain, UINT64_MAX, imageAvailableS, VK_NULL_HANDLE, &imageIndex);
 
 		if (res == VK_ERROR_OUT_OF_DATE_KHR) {
 			recreateSwapChain();
@@ -2041,7 +1949,7 @@ private:
 		presentInfo.pWaitSemaphores = &renderedS;
 
 		presentInfo.swapchainCount = 1;
-		presentInfo.pSwapchains = &m_SwapChain;
+		presentInfo.pSwapchains = &wVkGlobals::g_SwapChain.swapChain;
 		presentInfo.pImageIndices = &imageIndex;
 
 		presentInfo.pResults = nullptr; // Optional
@@ -2240,10 +2148,6 @@ private:
 		vkDestroyShaderModule(wVkGlobals::g_Device, m_FragShaderModule, nullptr);
 
 		destroySwapchain();
-
-		vkDestroyDevice(wVkGlobals::g_Device, nullptr);
-
-		vkDestroySurfaceKHR(wVkGlobals::g_Instance, wVkGlobals::g_Surface, nullptr);
 		m_BackEndRenderer.Shutdown();
 
 		glfwDestroyWindow(m_Window);
@@ -2263,28 +2167,18 @@ private:
 	BackEndRenderer m_BackEndRenderer;
 
 	// ImGui
-	uint32_t m_MinImageCount = 0; //Gotten from createSwapchain 
 	ImGui_ImplVulkanH_Window m_ImGuiWindow;
 	VkDescriptorPool m_ImguiPool = VK_NULL_HANDLE;
 	VkRenderPass m_ImGuiRenderPass = VK_NULL_HANDLE;
-
-	
 
 	// Commands
 	VkCommandPool m_CommandPool = VK_NULL_HANDLE;
 	VkCommandBuffer m_CommandBuffer[MAX_FRAMES_IN_FLIGHT] = {};
 	VkCommandBuffer m_ComputeCommandBuffer[MAX_FRAMES_IN_FLIGHT] = {};
-   
-	
 
-	VkSwapchainKHR m_SwapChain = VK_NULL_HANDLE;
-	VkFormat m_SwapChainImageFormat = {};   // Gotten from Swap-chain
-	VkExtent2D m_SwapChainExtent = {};      // Gotten from Swap-chain
-	std::vector<VkImage> m_SwapChainImages; // Gotten from Swap-chain
-
-	// Describes everything in the image: 2D/3D, mipmaps, depth buffer(?) etc.
-	std::vector<VkImageView> m_SwapChainImageViews;
 	std::vector<VkFramebuffer> m_SwapChainFramebuffers;
+	// Describes everything in the image: 2D/3D, mipmaps, depth buffer(?) etc.
+
 
 	// Depth
 	VkImage m_DepthImage = VK_NULL_HANDLE;

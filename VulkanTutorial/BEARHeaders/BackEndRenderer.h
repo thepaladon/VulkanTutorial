@@ -25,7 +25,7 @@ public:
 	void ImguiEndFrame();
 
 	// Resizes Render Targets
-	void ResizeFrameBuffers(const uint32_t width, const uint32_t height);
+	void ResizeFrameBuffers(GLFWwindow* window); // Diverged from OG BEAR
 
 	// Gets the ID of the current Render Target
 	uint32_t GetCurrentBackBufferIndex() const;

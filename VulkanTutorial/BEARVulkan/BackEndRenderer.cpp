@@ -1,6 +1,7 @@
 #include "BEARHeaders/BackEndRenderer.h"
 
 #include "wVkGlobalVariables.h"
+#include "wVkHelpers/wVkImageView.h"
 #include "wVkHelpers/wVkInstance.h"
 #include "wVkHelpers/wVkLogicalDevice.h"
 #include "wVkHelpers/wVkPhysicalDevice.h"
@@ -10,9 +11,48 @@ using namespace wVkGlobals;
 
 BackEndRenderer::BackEndRenderer() {}
 
-void BackEndRenderer::ResizeFrameBuffers(const uint32_t width, const uint32_t height)
+void destroySwapchain()
 {
+	if (g_SwapChain.swapChain != VK_NULL_HANDLE) {
 
+		for (const auto imageView : g_SwapChainImageViews) {
+			vkDestroyImageView(g_Device, imageView, nullptr);
+		}
+		vkDestroySwapchainKHR(g_Device, g_SwapChain.swapChain, nullptr);
+	}
+}
+
+void createSwapchainData(GLFWwindow* window)
+{
+	// Destroy previous swapchain, if valid
+	destroySwapchain();
+
+	// For intellisense - to get my values for debugging
+	auto& swapchain = g_SwapChain;
+	auto& swapchainImage = g_SwapChainImages;
+	auto& swapchainViews = g_SwapChainImageViews;
+
+	// Create new swapchain
+	swapchain = wVkHelpers::createSwapChain(window);
+
+
+	auto& imgCount = swapchain.imageCount;
+	vkGetSwapchainImagesKHR(g_Device, swapchain.swapChain, &imgCount, nullptr);
+	swapchainImage.resize(imgCount);
+	vkGetSwapchainImagesKHR(g_Device, swapchain.swapChain, &imgCount, swapchainImage.data());
+
+	swapchainViews.resize(swapchainImage.size());
+
+	for (uint32_t i = 0; i < swapchainImage.size(); i++) {
+		swapchainViews[i] = wVkHelpers::createImageView(swapchainImage[i], 1, swapchain.swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+	}
+}
+
+
+// ToDo, make this work with const uint32_t width, const uint32_t height, same comment as HWND
+void BackEndRenderer::ResizeFrameBuffers(GLFWwindow* window)
+{
+	createSwapchainData(window);
 }
 
 void BackEndRenderer::Initialize(GLFWwindow* window, Texture** mainRenderTargets, CommandList* cmdList)
@@ -36,6 +76,7 @@ void BackEndRenderer::Initialize(GLFWwindow* window, Texture** mainRenderTargets
 	vkGetDeviceQueue(g_Device, queueIndices.presentFamily.value(), 0, &g_PresentQueue);
 	vkGetDeviceQueue(g_Device, queueIndices.graphicsAndComputeFamily.value(), 0, &g_ComputeQueue);
 
+	createSwapchainData(window);
 }
 
 void BackEndRenderer::EndTracing()
@@ -70,11 +111,16 @@ uint32_t BackEndRenderer::GetCurrentBackBufferIndex() const
 
 void BackEndRenderer::Shutdown()
 {
+	destroySwapchain();
+
 	if (wVkConstants::enableValidationLayers) {
 		wVkHelpers::DestroyDebugUtilsMessengerEXT(g_Instance, g_DebugMessenger, nullptr);
 	}
 
+	vkDestroySurfaceKHR(g_Instance, g_Surface, nullptr);
+	vkDestroyDevice(g_Device, nullptr);
 	vkDestroyInstance(g_Instance, nullptr);
+
 }
 
 void BackEndRenderer::ImguiBeginFrame()

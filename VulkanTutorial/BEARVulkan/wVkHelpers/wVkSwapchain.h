@@ -14,6 +14,7 @@ namespace wVkHelpers {
 		std::vector<VkPresentModeKHR> presentModes;
 	};
 
+
 	inline SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) {
 		SwapChainSupportDetails details;
 
@@ -85,5 +86,70 @@ namespace wVkHelpers {
 		}
 	}
 
+	inline wVkSwapchain createSwapChain(GLFWwindow* window) {
+
+		wVkSwapchain swapchain = {};
+		const SwapChainSupportDetails swapChainSupport = querySwapChainSupport(wVkGlobals::g_PhysicalDevice);
+
+		const VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
+		const VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
+		const VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities, window);
+
+		uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
+
+		if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
+			imageCount = swapChainSupport.capabilities.maxImageCount;
+		}
+
+		VkSwapchainCreateInfoKHR createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+		createInfo.surface = wVkGlobals::g_Surface;
+		createInfo.minImageCount = imageCount;
+		createInfo.imageFormat = surfaceFormat.format;
+		createInfo.imageColorSpace = surfaceFormat.colorSpace;
+		createInfo.imageExtent = extent;
+		createInfo.imageArrayLayers = 1;
+		// The imageUsage bit field specifies what kind of operations we'll use the images in the swap chain 
+		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		// This places it directly at the output, for after-use (ex:post-processing) another flag is required 
+
+		const wVkHelpers::QueueFamilyIndices indices = wVkHelpers::findQueueFamilies(wVkGlobals::g_PhysicalDevice);
+		const uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+
+		// This is pretty consistent, check [VkTutorial](https://vulkan-tutorial.com/en/Drawing_a_triangle/Presentation/Swap_chain)
+		// if you need to touch this
+		if (indices.graphicsFamily != indices.presentFamily) {
+			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+			createInfo.queueFamilyIndexCount = 2;
+			createInfo.pQueueFamilyIndices = queueFamilyIndices;
+		}
+		else {
+			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			createInfo.queueFamilyIndexCount = 0; // Optional
+			createInfo.pQueueFamilyIndices = nullptr; // Optional
+		}
+
+		createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+		createInfo.presentMode = presentMode;
+		createInfo.clipped = VK_FALSE;
+
+		// For swapchain recreation, ex:resizing
+		// Ref: https://vulkan-tutorial.com/en/Drawing_a_triangle/Swap_chain_recreation
+		createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+		if (vkCreateSwapchainKHR(wVkGlobals::g_Device, &createInfo, nullptr, &swapchain.swapChain) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create swap chain!");
+		}
+
+		swapchain.minImageCount = swapChainSupport.capabilities.minImageCount;
+		swapchain.imageCount = imageCount;
+		swapchain.swapChainImageFormat = surfaceFormat.format;
+		swapchain.swapChainExtent = extent;
+
+
+		return swapchain;
+
+	}
 
 }

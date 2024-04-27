@@ -951,7 +951,6 @@ private:
 		}
 
 		for (size_t i = 0; i < wVkConstants::g_MaxFramesInFlight; i++) {
-
 			VkDescriptorBufferInfo bufferInfo{};
 			bufferInfo.buffer = m_CameraBuffer[i]->GetGPUHandleRef().m_Buffers;
 			bufferInfo.offset = 0;
@@ -982,8 +981,6 @@ private:
 
 			vkUpdateDescriptorSets(wVkGlobals::g_Device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 		}
-
-
 	}
 
 
@@ -1000,20 +997,14 @@ private:
 		TextureSpec spec{
 			texWidth,
 			texHeight,
-			TextureFormat::R8G8B8A8_SNORM,
+			TextureFormat::R8G8B8A8_SRGB,
 			TextureType::R_TEXTURE,
-			TextureFlags::NONE
+			TextureFlags::MIPMAP_GENERATE
 		};
 		
 		m_Texture = new Texture(pixels, spec, "Test Texture");
 
 		stbi_image_free(pixels);
-
-		
-	}
-
-	void createTextureImageView()
-	{
 	}
 
 	void createTextureSampler()
@@ -1145,7 +1136,6 @@ private:
 		poolInfo.pPoolSizes = poolSizes.data();
 		poolInfo.maxSets = static_cast<uint32_t>(wVkConstants::g_MaxFramesInFlight * 3);
 
-
 		if (vkCreateDescriptorPool(wVkGlobals::g_Device, &poolInfo, nullptr, &m_ComputeDescPool) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create descriptor pool!");
 		}
@@ -1270,7 +1260,6 @@ private:
 		createDtBuffers();
 
 		createTextureImage();
-		createTextureImageView();
 		createTextureSampler();
 
 		createDescriptorSetLayout();

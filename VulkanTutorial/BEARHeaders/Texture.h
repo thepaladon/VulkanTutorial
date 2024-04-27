@@ -7,6 +7,7 @@ enum class TextureFormat
 {
 	R8G8B8A8_UNORM,
 	R8G8B8A8_SNORM,
+	R8G8B8A8_SRGB, // Diverged from OG BEAR
 	R32_FLOAT,
 	R32_G32_FLOAT,
 	R32_G32_B32_A32_FLOAT,

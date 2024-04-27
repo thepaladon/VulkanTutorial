@@ -770,7 +770,7 @@ private:
 
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_ShaderStorageBuffers[currentFrame], offsets);
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_ParticleBuffers[currentFrame]->GetGPUHandleRef().m_Buffers, offsets);
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSets[currentFrame], 0, nullptr);
 
 		vkCmdDraw(commandBuffer, PARTICLE_COUNT, 1, 0, 0);
@@ -880,14 +880,10 @@ private:
 		const VkDeviceSize minUboAlignment = properties.limits.minMemoryMapAlignment;
 		bufferSize = (bufferSize + minUboAlignment - 1) & ~(minUboAlignment - 1);
 
-		m_DtBuffers.resize(wVkConstants::g_MaxFramesInFlight);
-		m_DtBuffersMemory.resize(wVkConstants::g_MaxFramesInFlight);
-		m_DtBuffersMapped.resize(wVkConstants::g_MaxFramesInFlight);
-
 		for (size_t i = 0; i < wVkConstants::g_MaxFramesInFlight; i++) {
-			wVkHelpers::createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_DtBuffers[i], m_DtBuffersMemory[i]);
-
-			vkMapMemory(wVkGlobals::g_Device, m_DtBuffersMemory[i], 0, bufferSize, 0, &m_DtBuffersMapped[i]);
+			const BufferFlags flags = BufferFlags::CBV;
+			std::string name = "DeltaTime Buffer for Particles " + std::to_string(i);
+			m_DtConstbuffer[i] = new Buffer(nullptr, sizeof(float), 1, flags, name);
 		}
 	}
 
@@ -1249,8 +1245,6 @@ private:
 		vkFreeMemory(wVkGlobals::g_Device, stagingBufferMemory, nullptr);
 	}
 
-
-
 	void createTextureImageView()
 	{
 		m_TextureImageView = wVkHelpers::createImageView(m_TextureImage, m_TexMipLevels, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
@@ -1298,9 +1292,6 @@ private:
 
 	void createShaderStorageBuffers()
 	{
-		m_ShaderStorageBuffers.resize(wVkConstants::g_MaxFramesInFlight);
-		m_ShaderStorageBuffersMemory.resize(wVkConstants::g_MaxFramesInFlight);
-
 		// Initialize particles
 		std::default_random_engine rndEngine((unsigned)time(nullptr));
 		std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
@@ -1328,27 +1319,12 @@ private:
 			particle.color = glm::vec3(rndDist(rndEngine), rndDist(rndEngine), rndDist(rndEngine));
 		}
 
-		constexpr VkDeviceSize bufferSize = sizeof(Particle) * PARTICLE_COUNT;
-
-		// Not the "VK_BUFFER_USAGE_STORAGE_BUFFER_BIT" flag to write to it
-		VkBuffer stagingBuffer;
-		VkDeviceMemory stagingBufferMemory;
-		wVkHelpers::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-		void* data;
-		vkMapMemory(wVkGlobals::g_Device, stagingBufferMemory, 0, bufferSize, 0, &data);
-		memcpy(data, particles.data(), (size_t)bufferSize);
-		vkUnmapMemory(wVkGlobals::g_Device, stagingBufferMemory);
-
-		for (size_t i = 0; i < wVkConstants::g_MaxFramesInFlight; i++) {
-			wVkHelpers::createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_ShaderStorageBuffers[i], m_ShaderStorageBuffersMemory[i]);
-			// Copy data from the staging buffer (host) to the shader storage buffer (GPU)
-			wVkHelpers::copyBufferNewCmd(stagingBuffer, m_ShaderStorageBuffers[i], bufferSize);
+		const BufferFlags partFlags = BufferFlags::UAV | BufferFlags::ALLOW_UA | BufferFlags::VERTEX_BUFFER; 
+		for(int i = 0; i < wVkConstants::g_MaxFramesInFlight; i++)
+		{
+			std::string name = "Particle Buffer " + std::to_string(i);
+			m_ParticleBuffers[i] = new Buffer(particles.data(), sizeof(Particle), particles.size(), partFlags, name);
 		}
-
-
-		vkDestroyBuffer(wVkGlobals::g_Device, stagingBuffer, nullptr);
-		vkFreeMemory(wVkGlobals::g_Device, stagingBufferMemory, nullptr);
 	}
 
 	void createComputeDescriptorSetup()
@@ -1441,7 +1417,7 @@ private:
 
 		for (size_t i = 0; i < wVkConstants::g_MaxFramesInFlight; i++) {
 			VkDescriptorBufferInfo uniformBufferInfo{};
-			uniformBufferInfo.buffer = m_DtBuffers[i]; //deltaTime
+			uniformBufferInfo.buffer = m_DtConstbuffer[i]->GetGPUHandleRef().m_Buffers; //deltaTime
 			uniformBufferInfo.offset = 0;
 			uniformBufferInfo.range = sizeof(float);
 
@@ -1455,7 +1431,7 @@ private:
 			descriptorWrites[0].pBufferInfo = &uniformBufferInfo;
 
 			VkDescriptorBufferInfo storageBufferInfoLastFrame{};
-			storageBufferInfoLastFrame.buffer = m_ShaderStorageBuffers[(i - 1) % wVkConstants::g_MaxFramesInFlight];
+			storageBufferInfoLastFrame.buffer = m_ParticleBuffers[(i - 1) % wVkConstants::g_MaxFramesInFlight]->GetGPUHandleRef().m_Buffers;
 			storageBufferInfoLastFrame.offset = 0;
 			storageBufferInfoLastFrame.range = sizeof(Particle) * PARTICLE_COUNT;
 
@@ -1468,7 +1444,7 @@ private:
 			descriptorWrites[1].pBufferInfo = &storageBufferInfoLastFrame;
 
 			VkDescriptorBufferInfo storageBufferInfoCurrentFrame{};
-			storageBufferInfoCurrentFrame.buffer = m_ShaderStorageBuffers[i];
+			storageBufferInfoCurrentFrame.buffer = m_ParticleBuffers[i]->GetGPUHandleRef().m_Buffers;
 			storageBufferInfoCurrentFrame.offset = 0;
 			storageBufferInfoCurrentFrame.range = sizeof(Particle) * PARTICLE_COUNT;
 
@@ -1570,7 +1546,7 @@ private:
 	}
 
 	void updateDtBuffer(uint32_t currentImage, float dt) {
-		memcpy(m_DtBuffersMapped[currentImage], &dt, sizeof(float));
+		m_DtConstbuffer[currentImage]->UpdateData(&dt, sizeof(float));
 	}
 
 	void drawFrame(double dt)
@@ -1825,18 +1801,15 @@ private:
 		for (size_t i = 0; i < wVkConstants::g_MaxFramesInFlight; i++) {
 
 			delete m_CameraBuffer[i];
-			
+			delete m_ParticleBuffers[i];
+			delete m_DtConstbuffer[i];
+
 			vkDestroySemaphore(wVkGlobals::g_Device, m_ImageAvailableSemaphore[i], nullptr);
 			vkDestroySemaphore(wVkGlobals::g_Device, m_RenderFinishedSemaphore[i], nullptr);
 			vkDestroyFence(wVkGlobals::g_Device, m_InFlightFence[i], nullptr);
 
 			vkDestroySemaphore(wVkGlobals::g_Device, m_ComputeFinishedSemaphores[i], nullptr);
 			vkDestroyFence(wVkGlobals::g_Device, m_ComputeInFlightFences[i], nullptr);
-
-			vkDestroyBuffer(wVkGlobals::g_Device, m_ShaderStorageBuffers[i], nullptr);
-			vkFreeMemory(wVkGlobals::g_Device, m_ShaderStorageBuffersMemory[i], nullptr);
-			vkDestroyBuffer(wVkGlobals::g_Device, m_DtBuffers[i], nullptr);
-			vkFreeMemory(wVkGlobals::g_Device, m_DtBuffersMemory[i], nullptr);
 		}
 
 
@@ -1930,11 +1903,12 @@ private:
 	VkSampler m_TextureSampler = VK_NULL_HANDLE;
 
 	// Compute Stuff
-	std::vector<VkBuffer> m_ShaderStorageBuffers = {};
-	std::vector<VkDeviceMemory> m_ShaderStorageBuffersMemory = {};
+	Buffer* m_ParticleBuffers[wVkConstants::g_MaxFramesInFlight] = {};
+	Buffer* m_DtConstbuffer[wVkConstants::g_MaxFramesInFlight] = {};
 	VkDescriptorSetLayout m_ComputeDescriptorSetLayoutUbo = VK_NULL_HANDLE;
 	VkDescriptorSetLayout m_ComputeDescriptorSetLayoutRead = VK_NULL_HANDLE;
 	VkDescriptorSetLayout m_ComputeDescriptorSetLayoutWrite = VK_NULL_HANDLE;
+
 
 	VkDescriptorPool m_ComputeDescPool = VK_NULL_HANDLE;
 
@@ -1949,10 +1923,7 @@ private:
 	VkFence m_ComputeInFlightFences[wVkConstants::g_MaxFramesInFlight] = {};
 	VkSemaphore m_ComputeFinishedSemaphores[wVkConstants::g_MaxFramesInFlight] = {};
 
-	// Uniform Buffers Dt
-	std::vector<VkBuffer> m_DtBuffers;
-	std::vector<VkDeviceMemory> m_DtBuffersMemory;
-	std::vector<void*> m_DtBuffersMapped;
+
 
 
 	// GLFW

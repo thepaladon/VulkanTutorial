@@ -759,10 +759,10 @@ private:
 		scissor.extent = wVkGlobals::g_SwapChain.swapChainExtent;
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-		VkBuffer vertexBuffers[] = { m_VertexBuffer };
+		VkBuffer vertexBuffers[] = { m_VertexBuffer->GetGPUHandleRef().m_Buffers };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-		vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+		vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer->GetGPUHandleRef().m_Buffers, 0, VK_INDEX_TYPE_UINT16);
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSets[currentFrame], 0, nullptr);
 		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(g_indices.size()), 1, 0, 0, 0);
 		
@@ -847,49 +847,18 @@ private:
 		vkFreeMemory(wVkGlobals::g_Device, m_DepthImageMemory, nullptr);
 	}
 
-
-
 	void createVertexBuffer()
 	{
-		const VkDeviceSize bufferSize = sizeof(g_vertices[0]) * g_vertices.size();
-
-		VkBuffer stagingBuffer;
-		VkDeviceMemory stagingBufferMemory;
-		wVkHelpers::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-		void* data;
-		vkMapMemory(wVkGlobals::g_Device, stagingBufferMemory, 0, bufferSize, 0, &data);
-		memcpy(data, g_vertices.data(), (size_t)bufferSize);
-		vkUnmapMemory(wVkGlobals::g_Device, stagingBufferMemory);
-
-		wVkHelpers::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_VertexBuffer, m_VertexBufferMemory);
-
-		wVkHelpers::copyBufferNewCmd(stagingBuffer, m_VertexBuffer, bufferSize);
-
-		vkDestroyBuffer(wVkGlobals::g_Device, stagingBuffer, nullptr);
-		vkFreeMemory(wVkGlobals::g_Device, stagingBufferMemory, nullptr);
+		const BufferFlags vbFlags = BufferFlags::SRV | BufferFlags::VERTEX_BUFFER;
+		const std::string vbName = "Vertex Buffer";
+		m_VertexBuffer = new Buffer(g_vertices.data(), sizeof(g_vertices[0]), g_vertices.size(), vbFlags, vbName);
 	}
 
 	void createIndexBuffer()
 	{
-		VkDeviceSize bufferSize = sizeof(g_indices[0]) * g_indices.size();
-
-		VkBuffer stagingBuffer;
-		VkDeviceMemory stagingBufferMemory;
-		wVkHelpers::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-		void* data;
-		vkMapMemory(wVkGlobals::g_Device, stagingBufferMemory, 0, bufferSize, 0, &data);
-		memcpy(data, g_indices.data(), (size_t)bufferSize);
-		vkUnmapMemory(wVkGlobals::g_Device, stagingBufferMemory);
-
-		wVkHelpers::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_IndexBuffer, m_IndexBufferMemory);
-
-		wVkHelpers::copyBufferNewCmd(stagingBuffer, m_IndexBuffer, bufferSize);
-
-		vkDestroyBuffer(wVkGlobals::g_Device, stagingBuffer, nullptr);
-		vkFreeMemory(wVkGlobals::g_Device, stagingBufferMemory, nullptr);
-
+		const BufferFlags vbFlags = BufferFlags::SRV | BufferFlags::INDEX_BUFFER;
+		const std::string vbName = "Index Buffer";
+		m_IndexBuffer = new Buffer(g_indices.data(), sizeof(g_indices[0]), g_indices.size(), vbFlags, vbName);
 	}
 
 	void createUniformBuffers() {
@@ -1877,11 +1846,8 @@ private:
 		vkFreeMemory(wVkGlobals::g_Device, m_TextureImageMemory, nullptr);
 
 		// Destroy our draw buffers
-		vkDestroyBuffer(wVkGlobals::g_Device, m_VertexBuffer, nullptr);
-		vkFreeMemory(wVkGlobals::g_Device, m_VertexBufferMemory, nullptr);
-		vkDestroyBuffer(wVkGlobals::g_Device, m_IndexBuffer, nullptr);
-		vkFreeMemory(wVkGlobals::g_Device, m_IndexBufferMemory, nullptr);
-
+		delete m_VertexBuffer;
+		delete m_IndexBuffer;
 
 		vkDestroyPipeline(wVkGlobals::g_Device, m_ComputePipeline, nullptr);
 		vkDestroyPipelineLayout(wVkGlobals::g_Device, m_ComputePipelineLayout, nullptr);
@@ -1950,13 +1916,11 @@ private:
 	VkPipeline m_GraphicsPipelinePoints = VK_NULL_HANDLE;
 
 	// Drawing Data
-	VkBuffer m_VertexBuffer = VK_NULL_HANDLE;
-	VkDeviceMemory m_VertexBufferMemory = VK_NULL_HANDLE;
-	VkBuffer m_IndexBuffer = VK_NULL_HANDLE;
-	VkDeviceMemory m_IndexBufferMemory = VK_NULL_HANDLE;
+	Buffer* m_VertexBuffer = nullptr;
+	Buffer* m_IndexBuffer = nullptr;
 
 	// Uniform Buffers
-	Buffer* m_CameraBuffer[wVkConstants::g_MaxFramesInFlight];
+	Buffer* m_CameraBuffer[wVkConstants::g_MaxFramesInFlight] = {};
 
 	// Textures
 	uint32_t m_TexMipLevels = 0;

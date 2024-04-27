@@ -14,6 +14,8 @@ Buffer::Buffer(const void* data, const size_t stride, const size_t count, Buffer
 	const std::string& name)
 {
 	bool writeNow = true;
+	bool gpuOnly = false;
+
 	if (data == nullptr)
 	{
 		writeNow = false;
@@ -25,24 +27,32 @@ Buffer::Buffer(const void* data, const size_t stride, const size_t count, Buffer
 	// We always want to use it on the GPU;
 	usageFlags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
-	if ((flags & (BufferFlags::UAV)) == (BufferFlags::UAV)) {
-		usageFlags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-		memoryFlags |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-	}
-
 	if ((flags & (BufferFlags::CBV)) == (BufferFlags::CBV)) {
 		usageFlags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 		memoryFlags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+		gpuOnly = false;
 	}
 
-	if ((flags & (BufferFlags::ALLOW_UA)) == (BufferFlags::ALLOW_UA)) {
-		usageFlags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+	if (((flags & (BufferFlags::SRV)) == BufferFlags::SRV) || (flags & (BufferFlags::UAV)) == BufferFlags::UAV) {
+		memoryFlags |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		gpuOnly = true;
 	}
 
 	if ((flags & (BufferFlags::VERTEX_BUFFER)) == (BufferFlags::VERTEX_BUFFER)) {
 		usageFlags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 	}
 
+	if ((flags & (BufferFlags::INDEX_BUFFER)) == (BufferFlags::INDEX_BUFFER)) {
+		usageFlags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+	}
+
+	if ((flags & (BufferFlags::ALLOW_UA)) == (BufferFlags::ALLOW_UA)) {
+		usageFlags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+	}
+
+	if ((flags & (BufferFlags::UAV)) == (BufferFlags::UAV)) {
+		usageFlags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+	}
 
 	// Buffer options:
 	// CBV = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
@@ -59,9 +69,7 @@ Buffer::Buffer(const void* data, const size_t stride, const size_t count, Buffer
 	const VkDeviceSize bufferSize = stride * count;
 
 	// Both SRV and YAV flags are set - Buffer exclusively lives on GPU
-	if ((flags & (BufferFlags::SRV | BufferFlags::UAV)) == (BufferFlags::SRV | BufferFlags::UAV)) {
-
-
+	if (gpuOnly) {
 
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;

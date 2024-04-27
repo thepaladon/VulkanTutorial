@@ -14,7 +14,8 @@ enum class BufferFlags : unsigned int
 	// rarely updated
 	UPLOAD_HEAP = 1 << 6, // Upload heap is fast to update - slower to access in shader, used for data which is
 	// regularly updated
-	VERTEX_BUFFER = 1 << 7, // PS5 specific, as requires the unique struct
+	VERTEX_BUFFER = 1 << 7, 
+	INDEX_BUFFER = 1 << 8,  
 };
 
 // Enable bitwise operations on the BufferFlags enum

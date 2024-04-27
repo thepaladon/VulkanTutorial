@@ -2,11 +2,11 @@
 
 #include "wVkGlobalVariables.h"
 #include "wVkHelpers/wVkCommands.h"
-#include "wVkHelpers/wVkImageView.h"
 #include "wVkHelpers/wVkImGui.h"
 #include "wVkHelpers/wVkInstance.h"
 #include "wVkHelpers/wVkLogicalDevice.h"
 #include "wVkHelpers/wVkPhysicalDevice.h"
+#include "wVkHelpers/wVkTexture.h"
 
 
 using namespace wVkGlobals;

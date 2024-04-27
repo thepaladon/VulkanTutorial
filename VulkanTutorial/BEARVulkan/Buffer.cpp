@@ -3,15 +3,12 @@
 #include <stdexcept>
 
 #include "wVkGlobalVariables.h"
-#include "wVkTempBuffer.h"
 #include "Utils/ConsoleLogger.h"
-#include "wVkHelpers/wVkCommands.h"
-
-
+#include "wVkHelpers/wVkTemp.h"
 
 
 Buffer::Buffer(const void* data, const size_t stride, const size_t count, BufferFlags flags,
-	const std::string& name)
+               const std::string& name)
 {
 	bool writeNow = true;
 	bool gpuOnly = false;

@@ -50,9 +50,10 @@ struct wVkRenderTarget
 
 struct wVkTexture2D
 {
-    VkImageLayout m_State = VK_IMAGE_LAYOUT_GENERAL;
-    VkImage m_Texture = VK_NULL_HANDLE;
-    VkBuffer m_Uploader = VK_NULL_HANDLE;
+    uint32_t m_TexMipLevels = 0;
+    VkImage m_TextureImage = VK_NULL_HANDLE;
+    VkDeviceMemory m_TextureImageMemory = VK_NULL_HANDLE;
+    VkImageView m_TextureImageView = VK_NULL_HANDLE;
 };
 
 struct wVkBLAS

@@ -15,7 +15,7 @@ enum class BufferFlags : unsigned int
 	UPLOAD_HEAP = 1 << 6, // Upload heap is fast to update - slower to access in shader, used for data which is
 	// regularly updated
 	VERTEX_BUFFER = 1 << 7, 
-	INDEX_BUFFER = 1 << 8,  
+	INDEX_BUFFER = 1 << 8,  // Diverged from OG BEAR
 };
 
 // Enable bitwise operations on the BufferFlags enum

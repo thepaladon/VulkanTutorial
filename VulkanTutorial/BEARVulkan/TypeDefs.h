@@ -9,9 +9,9 @@
 
 struct wVkBuffer
 {
-    VkImageLayout m_State = VK_IMAGE_LAYOUT_GENERAL;
-    VkBuffer m_Buffer = VK_NULL_HANDLE;
-    VkBuffer m_Uploader = VK_NULL_HANDLE;
+    // For uniform resources we create 2 per frame
+    VkBuffer m_Buffers;
+    VkDeviceMemory m_BuffersMemory;
 };
 
 struct wVkCommandList

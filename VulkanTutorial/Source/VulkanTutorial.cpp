@@ -36,6 +36,7 @@
 #include <random>
 
 #include "framework.h"
+#include "wVkTempBuffer.h"
 #include "assimp/Importer.hpp"
 #include "assimp/postprocess.h"
 #include "assimp/scene.h"
@@ -846,58 +847,7 @@ private:
 		vkFreeMemory(wVkGlobals::g_Device, m_DepthImageMemory, nullptr);
 	}
 
-	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
-		VkPhysicalDeviceMemoryProperties memProperties;
-		vkGetPhysicalDeviceMemoryProperties(wVkGlobals::g_PhysicalDevice, &memProperties);
 
-		for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-			if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-				return i;
-			}
-		}
-
-		throw std::runtime_error("failed to find suitable memory type!");
-
-	}
-
-	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
-		VkBufferCreateInfo bufferInfo{};
-		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.size = size;
-		bufferInfo.usage = usage;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		if (vkCreateBuffer(wVkGlobals::g_Device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create buffer!");
-		}
-
-		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(wVkGlobals::g_Device, buffer, &memRequirements);
-
-		VkMemoryAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
-
-		if (vkAllocateMemory(wVkGlobals::g_Device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
-			throw std::runtime_error("failed to allocate buffer memory!");
-		}
-
-		vkBindBufferMemory(wVkGlobals::g_Device, buffer, bufferMemory, 0);
-	}
-
-	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
-
-		VkCommandBuffer commandBuffer = wVkHelpers::beginSingleTimeCommand();
-
-		VkBufferCopy copyRegion{};
-		copyRegion.srcOffset = 0; // Optional
-		copyRegion.dstOffset = 0; // Optional
-		copyRegion.size = size;
-		vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-
-		wVkHelpers::endSingleTimeCommand(commandBuffer);
-	}
 
 	void createVertexBuffer()
 	{
@@ -905,16 +855,16 @@ private:
 
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
-		createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+		wVkHelpers::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
 		void* data;
 		vkMapMemory(wVkGlobals::g_Device, stagingBufferMemory, 0, bufferSize, 0, &data);
 		memcpy(data, g_vertices.data(), (size_t)bufferSize);
 		vkUnmapMemory(wVkGlobals::g_Device, stagingBufferMemory);
 
-		createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_VertexBuffer, m_VertexBufferMemory);
+		wVkHelpers::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_VertexBuffer, m_VertexBufferMemory);
 
-		copyBuffer(stagingBuffer, m_VertexBuffer, bufferSize);
+		wVkHelpers::copyBufferNewCmd(stagingBuffer, m_VertexBuffer, bufferSize);
 
 		vkDestroyBuffer(wVkGlobals::g_Device, stagingBuffer, nullptr);
 		vkFreeMemory(wVkGlobals::g_Device, stagingBufferMemory, nullptr);
@@ -926,16 +876,16 @@ private:
 
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
-		createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+		wVkHelpers::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
 		void* data;
 		vkMapMemory(wVkGlobals::g_Device, stagingBufferMemory, 0, bufferSize, 0, &data);
 		memcpy(data, g_indices.data(), (size_t)bufferSize);
 		vkUnmapMemory(wVkGlobals::g_Device, stagingBufferMemory);
 
-		createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_IndexBuffer, m_IndexBufferMemory);
+		wVkHelpers::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_IndexBuffer, m_IndexBufferMemory);
 
-		copyBuffer(stagingBuffer, m_IndexBuffer, bufferSize);
+		wVkHelpers::copyBufferNewCmd(stagingBuffer, m_IndexBuffer, bufferSize);
 
 		vkDestroyBuffer(wVkGlobals::g_Device, stagingBuffer, nullptr);
 		vkFreeMemory(wVkGlobals::g_Device, stagingBufferMemory, nullptr);
@@ -943,16 +893,10 @@ private:
 	}
 
 	void createUniformBuffers() {
-		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-
-		m_UniformBuffers.resize(wVkConstants::g_MaxFramesInFlight);
-		m_UniformBuffersMemory.resize(wVkConstants::g_MaxFramesInFlight);
-		m_UniformBuffersMapped.resize(wVkConstants::g_MaxFramesInFlight);
-
 		for (size_t i = 0; i < wVkConstants::g_MaxFramesInFlight; i++) {
-			createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_UniformBuffers[i], m_UniformBuffersMemory[i]);
-
-			vkMapMemory(wVkGlobals::g_Device, m_UniformBuffersMemory[i], 0, bufferSize, 0, &m_UniformBuffersMapped[i]);
+			constexpr BufferFlags uboFlags = BufferFlags::CBV;
+			const std::string uboName = "Camera Ubo " + std::to_string(i);
+			m_CameraBuffer[i] = new Buffer(nullptr, sizeof(UniformBufferObject), 1, uboFlags, uboName);
 		}
 	}
 
@@ -972,8 +916,7 @@ private:
 		m_DtBuffersMapped.resize(wVkConstants::g_MaxFramesInFlight);
 
 		for (size_t i = 0; i < wVkConstants::g_MaxFramesInFlight; i++) {
-
-			createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_DtBuffers[i], m_DtBuffersMemory[i]);
+			wVkHelpers::createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_DtBuffers[i], m_DtBuffersMemory[i]);
 
 			vkMapMemory(wVkGlobals::g_Device, m_DtBuffersMemory[i], 0, bufferSize, 0, &m_DtBuffersMapped[i]);
 		}
@@ -1046,7 +989,7 @@ private:
 		for (size_t i = 0; i < wVkConstants::g_MaxFramesInFlight; i++) {
 
 			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = m_UniformBuffers[i];
+			bufferInfo.buffer = m_CameraBuffer[i]->GetGPUHandleRef().m_Buffers;
 			bufferInfo.offset = 0;
 			bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -1106,7 +1049,7 @@ private:
 		VkMemoryAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+		allocInfo.memoryTypeIndex = wVkHelpers::findMemoryType(memRequirements.memoryTypeBits, properties);
 
 		if (vkAllocateMemory(wVkGlobals::g_Device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
 			throw std::runtime_error("failed to allocate image memory!");
@@ -1310,7 +1253,7 @@ private:
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
 
-		createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+		wVkHelpers::createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
 		void* data;
 		vkMapMemory(wVkGlobals::g_Device, stagingBufferMemory, 0, imageSize, 0, &data);
@@ -1421,7 +1364,7 @@ private:
 		// Not the "VK_BUFFER_USAGE_STORAGE_BUFFER_BIT" flag to write to it
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
-		createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+		wVkHelpers::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
 		void* data;
 		vkMapMemory(wVkGlobals::g_Device, stagingBufferMemory, 0, bufferSize, 0, &data);
@@ -1429,9 +1372,9 @@ private:
 		vkUnmapMemory(wVkGlobals::g_Device, stagingBufferMemory);
 
 		for (size_t i = 0; i < wVkConstants::g_MaxFramesInFlight; i++) {
-			createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_ShaderStorageBuffers[i], m_ShaderStorageBuffersMemory[i]);
+			wVkHelpers::createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_ShaderStorageBuffers[i], m_ShaderStorageBuffersMemory[i]);
 			// Copy data from the staging buffer (host) to the shader storage buffer (GPU)
-			copyBuffer(stagingBuffer, m_ShaderStorageBuffers[i], bufferSize);
+			wVkHelpers::copyBufferNewCmd(stagingBuffer, m_ShaderStorageBuffers[i], bufferSize);
 		}
 
 
@@ -1653,8 +1596,8 @@ private:
 		// Y Coordinate of Clip Coordinates is flipped, this fixes that.
 		ubo.proj[1][1] *= -1;
 
+		m_CameraBuffer[currentImage]->UpdateData(&ubo, sizeof(ubo));
 
-		memcpy(m_UniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 	}
 
 	void updateDtBuffer(uint32_t currentImage, float dt) {
@@ -1912,9 +1855,8 @@ private:
 
 		for (size_t i = 0; i < wVkConstants::g_MaxFramesInFlight; i++) {
 
-			vkDestroyBuffer(wVkGlobals::g_Device, m_UniformBuffers[i], nullptr);
-			vkFreeMemory(wVkGlobals::g_Device, m_UniformBuffersMemory[i], nullptr);
-
+			delete m_CameraBuffer[i];
+			
 			vkDestroySemaphore(wVkGlobals::g_Device, m_ImageAvailableSemaphore[i], nullptr);
 			vkDestroySemaphore(wVkGlobals::g_Device, m_RenderFinishedSemaphore[i], nullptr);
 			vkDestroyFence(wVkGlobals::g_Device, m_InFlightFence[i], nullptr);
@@ -2014,9 +1956,7 @@ private:
 	VkDeviceMemory m_IndexBufferMemory = VK_NULL_HANDLE;
 
 	// Uniform Buffers
-	std::vector<VkBuffer> m_UniformBuffers;
-	std::vector<VkDeviceMemory> m_UniformBuffersMemory;
-	std::vector<void*> m_UniformBuffersMapped;
+	Buffer* m_CameraBuffer[wVkConstants::g_MaxFramesInFlight];
 
 	// Textures
 	uint32_t m_TexMipLevels = 0;

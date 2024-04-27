@@ -102,9 +102,6 @@
     <ClInclude Include="BEARVulkan\wVkHelpers\wVkCommands.h">
       <Filter>Header Files\VulkanSpecific</Filter>
     </ClInclude>
-    <ClInclude Include="BEARVulkan\wVkConstants.h">
-      <Filter>Header Files\VulkanSpecific</Filter>
-    </ClInclude>
     <ClInclude Include="BEARVulkan\wVkHelpers\wVkDebug.h">
       <Filter>Header Files\VulkanSpecific</Filter>
     </ClInclude>
@@ -133,6 +130,12 @@
       <Filter>Header Files\VulkanSpecific</Filter>
     </ClInclude>
     <ClInclude Include="BEARVulkan\wVkHelpers\wVkSwapchain.h">
+      <Filter>Header Files\VulkanSpecific</Filter>
+    </ClInclude>
+    <ClInclude Include="BEARVulkan\wVkConstants.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="wVkTempBuffer.h">
       <Filter>Header Files\VulkanSpecific</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,9 +1,11 @@
 #include "BEARHeaders/CommandList.h"
 
 #include "wVkConstants.h"
-#include <stdexcept>
 
 #include "wVkGlobalVariables.h"
+#include "BEARHeaders/Buffer.h"
+#include "Utils/ConsoleLogger.h"
+#include "wVkHelpers/wVkCommands.h"
 
 CommandList::~CommandList()
 {
@@ -60,7 +62,18 @@ void CommandList::BindResourceSRV(const uint32_t layoutLocation, TLAS& tlas)
 
 void CommandList::CopyResource(Buffer& bufferDst, Buffer& bufferSrc)
 {
+	ASSERT(bufferSrc.GetSizeBytes() == bufferDst.GetSizeBytes(), "Buffers must be equal in size");
 
+	// REMEMBER TO FIX THIS 
+	const VkCommandBuffer commandBuffer = m_CmdListHandle.m_CommandBuffer[1];
+
+	VkBufferCopy copyRegion{};
+	copyRegion.srcOffset = 0; // Optional
+	copyRegion.dstOffset = 0; // Optional
+	copyRegion.size = bufferSrc.GetSizeBytes();
+	vkCmdCopyBuffer(commandBuffer, bufferSrc.GetGPUHandleRef().m_Buffers, bufferDst.GetGPUHandleRef().m_Buffers, 1, &copyRegion);
+
+	//wVkHelpers::endSingleTimeCommand(commandBuffer);
 }
 
 void CommandList::CopyResource(Texture& textureDst, Texture& textureSrc)

@@ -3,7 +3,7 @@
 #include "BEARVulkan/TypeDefs.h"
 
 
-enum class BufferFlags
+enum class BufferFlags : unsigned int
 {
 	NONE = 0,
 	CBV = 1 << 1, // 256 byte aligned structs (b0)
@@ -37,7 +37,6 @@ public:
 	Buffer(const void* data, const size_t stride, const size_t count, BufferFlags flags = BufferFlags::NONE,
 		const std::string& name = "default_name");
 
-	// ToDo: GPU deallocator
 	~Buffer();
 
 	uint32_t GetNumElements() const { return m_Count; }

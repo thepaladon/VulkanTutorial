@@ -2,8 +2,6 @@
 #include <string>
 #include <vector>
 
-#include "vulkan/vulkan.h"
-
 namespace wVkConstants {
 
 	// Useful variables

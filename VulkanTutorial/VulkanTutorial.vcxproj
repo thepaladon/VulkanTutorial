@@ -43,6 +43,7 @@
     <ClInclude Include="Utils\FreeCamera.h" />
     <ClInclude Include="Utils\ConsoleLogger.h" />
     <ClInclude Include="Utils\Transform.h" />
+    <ClInclude Include="wVkTempBuffer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BEARVulkan\BackEndRenderer.cpp" />

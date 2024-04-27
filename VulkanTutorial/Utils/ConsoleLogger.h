@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cassert>
+
 namespace Logger {
 
     enum class MessageType {
@@ -72,4 +74,12 @@ namespace Logger {
     Logger::VklogWarning(__FILE__, __LINE__, format, ##__VA_ARGS__)
 #define VK_LOG_ERROR(format, ...) \
     Logger::VklogError(__FILE__, __LINE__, format, ##__VA_ARGS__)
+
+#define ASSERT(condition, format, ...) \
+    do { \
+        if (!(condition)) { \
+			Logger::VklogError(__FILE__, __LINE__, format, ##__VA_ARGS__); \
+			assert(false);\
+        } \
+    } while (false) \
 

@@ -28,6 +28,8 @@ enum class WrapUV
 	REPEAT
 };
 
+
+// This is stupid legacy BEAR code....
 struct SamplerState
 {
 	SamplerState() { valid = false; }
@@ -113,13 +115,18 @@ struct SamplerState
 class Sampler
 {
 public:
-	// Constructor and destructor
+
+	Sampler() = delete;
 	Sampler(MinFilter minFilter, MagFilter magFilter, WrapUV wrapUV);
-	~Sampler() = default;
+	
+	Sampler(const Sampler&) = delete;
+	Sampler& operator=(const Sampler&) = delete;
+
+	void Destroy();
 
 	GPUSamplerHandle GetGPUHandle() const { return m_SamplerHandle; }
 	GPUSamplerHandle& GetGPUHandleRef() { return m_SamplerHandle; }
-	SamplerState GetSamplerState() { return m_SamplerState; }
+	SamplerState GetSamplerState() const { return m_SamplerState; }
 
 private:
 	GPUSamplerHandle m_SamplerHandle;

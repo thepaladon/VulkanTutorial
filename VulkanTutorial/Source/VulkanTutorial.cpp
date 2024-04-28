@@ -592,7 +592,7 @@ private:
 		renderPassInfo.pDependencies = &dependency;
 
 
-
+		 
 		if (vkCreateRenderPass(wVkGlobals::g_Device, &renderPassInfo, nullptr, &m_RenderPass) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create render pass!");
 		}
@@ -959,7 +959,7 @@ private:
 			VkDescriptorImageInfo imageInfo{};
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			imageInfo.imageView = m_Texture->GetGPUHandleRef().m_TextureImageView;
-			imageInfo.sampler = m_TextureSampler;
+			imageInfo.sampler = m_Sampler->GetGPUHandleRef().m_Sampler;
 
 			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 
@@ -1005,35 +1005,6 @@ private:
 		m_Texture = new Texture(pixels, spec, "Test Texture");
 
 		stbi_image_free(pixels);
-	}
-
-	void createTextureSampler()
-	{
-		VkPhysicalDeviceProperties properties{};
-		vkGetPhysicalDeviceProperties(wVkGlobals::g_PhysicalDevice, &properties);
-
-		VkSamplerCreateInfo samplerInfo{};
-		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		samplerInfo.magFilter = VK_FILTER_LINEAR;
-		samplerInfo.minFilter = VK_FILTER_LINEAR;
-		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.anisotropyEnable = VK_TRUE;
-		samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
-		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-		samplerInfo.unnormalizedCoordinates = VK_FALSE;
-		samplerInfo.compareEnable = VK_FALSE;
-		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-
-		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerInfo.minLod = static_cast<float>(0);
-		samplerInfo.maxLod = static_cast<float>(m_Texture->GetGPUHandleRef().m_TexMipLevels);
-		samplerInfo.mipLodBias = 0.0f; // Optional
-
-		if (vkCreateSampler(wVkGlobals::g_Device, &samplerInfo, nullptr, &m_TextureSampler) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create texture sampler!");
-		}
 	}
 
 
@@ -1260,7 +1231,7 @@ private:
 		createDtBuffers();
 
 		createTextureImage();
-		createTextureSampler();
+		m_Sampler = new Sampler(MinFilter::LINEAR_MIPMAP_LINEAR, MagFilter::NEAREST, WrapUV::REPEAT);
 
 		createDescriptorSetLayout();
 		createDescriptorPool();
@@ -1568,7 +1539,7 @@ private:
 		}
 
 
-		vkDestroySampler(wVkGlobals::g_Device, m_TextureSampler, nullptr);
+		delete m_Sampler;
 		delete m_Texture;
 
 		// Destroy our draw buffers
@@ -1650,7 +1621,7 @@ private:
 
 	// Textures
 	Texture* m_Texture = nullptr;
-	VkSampler m_TextureSampler = VK_NULL_HANDLE;
+	Sampler* m_Sampler = nullptr;
 
 	// Compute Stuff
 	Buffer* m_ParticleBuffers[wVkConstants::g_MaxFramesInFlight] = {};

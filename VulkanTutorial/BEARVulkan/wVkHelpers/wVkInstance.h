@@ -69,7 +69,17 @@ namespace wVkHelpers {
 			createInfo.enabledLayerCount = static_cast<uint32_t>(wVkConstants::validationLayers.size());
 			createInfo.ppEnabledLayerNames = wVkConstants::validationLayers.data();
 
+			VkValidationFeatureEnableEXT enables[] = { VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT };
+			VkValidationFeaturesEXT features{};
+			features.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
+			features.enabledValidationFeatureCount = 1;
+			features.pEnabledValidationFeatures = enables;
+
+//			createInfo.pNext = &features;
+
+
 			populateDebugMessengerCreateInfo(debugCreateInfo);
+			debugCreateInfo.pNext = &features;
 			createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 		}
 		else {

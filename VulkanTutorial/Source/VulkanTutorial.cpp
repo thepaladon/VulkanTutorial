@@ -776,6 +776,30 @@ private:
 
 		vkCmdEndRenderPass(commandBuffer);
 
+		// Synchronize depth as both the ImGui Render Pass and the
+		// Draw render pass will try to run at the same time (WAW error)
+		VkImageMemoryBarrier barrier = {};
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		barrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT ;
+		barrier.image = m_DepthImage;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		barrier.subresourceRange.baseMipLevel = 0;
+		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = 1;
+
+		vkCmdPipelineBarrier(
+			commandBuffer,
+			VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, // Source stage
+			VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, // Destination stage
+			0, // Dependency flags
+			0, nullptr, // Memory barrier count and pointer
+			0, nullptr, // Buffer barrier count and pointer
+			1, &barrier); // Image barrier count and pointer
+
 		// ImGui Render Pass
 		{
 			VkRenderPassBeginInfo info = {};

@@ -29,6 +29,7 @@
     <ClInclude Include="BEARVulkan\wVkConstants.h" />
     <ClInclude Include="BEARVulkan\wVkGlobalVariables.h" />
     <ClInclude Include="BEARVulkan\TypeDefs.h" />
+    <ClInclude Include="BEARVulkan\wVkHelpers\wVkDescriptorHeap.h" />
     <ClInclude Include="BEARVulkan\wVkHelpers\wVkHelpers.h" />
     <ClInclude Include="BEARVulkan\wVkHelpers\wVkCommands.h" />
     <ClInclude Include="BEARVulkan\wVkHelpers\wVkDebug.h" />

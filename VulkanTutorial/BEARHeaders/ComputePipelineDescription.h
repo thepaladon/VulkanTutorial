@@ -12,6 +12,8 @@ public:
 	~ComputePipelineDescription() = default;
 
 	void Initialize(const std::string& shaderName, ShaderLayout& layout);
+	void Destroy(); //Deviated from OG BEAR
+
 	GPUComputePipelineHandle& GetPipelineHandleRef() { return m_PipelineHandle; }
 	ShaderLayout GetShaderLayout() const { return m_ShaderLayout; }
 	ShaderLayout& GetShaderLayoutRef() { return m_ShaderLayout; }

@@ -10,6 +10,7 @@ enum class ShaderParameter
 	SRV // register (t...) - read buffers and textures
 };
 
+
 class ShaderLayout
 {
 public:
@@ -25,7 +26,7 @@ public:
 	// Add multiple at the same time, for instance [UAV, SRV, SRV]
 	// If adding more than one make sure the Shader Parameter is a valid array
 	// ToDo, remake it using std::vector
-	void AddParameters(ShaderParameter* type, int num);
+	void AddParameters(ShaderParameter type, int num);
 
 	GPUShaderLayoutHandle GetShaderLayoutHandle() const { return m_ShaderLayout; }
 	GPUShaderLayoutHandle& GetShaderLayoutHandleRef() { return m_ShaderLayout; }

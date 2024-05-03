@@ -67,22 +67,7 @@
 constexpr uint32_t WIDTH = 1600;
 constexpr uint32_t HEIGHT = 1200;
 
-static std::vector<char> readFile(const std::string& filename) {
-	std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
-	if (!file.is_open()) {
-		throw std::runtime_error("failed to open file!");
-	}
-
-	const size_t fileSize = file.tellg();
-	std::vector<char> buffer(fileSize);
-
-	file.seekg(0);
-	file.read(buffer.data(), fileSize);
-	file.close();
-
-	return buffer;
-}
 
 // Goofy but keep it global for now
 // The annoyances of working with this "HelloTriangleApplication" class
@@ -324,26 +309,6 @@ private:
 
 	}
 
-
-
-
-
-	VkShaderModule createShaderModule(const std::vector<char>& code) {
-
-		VkShaderModuleCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		createInfo.codeSize = code.size();
-		createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
-		VkShaderModule shaderModule;
-		if (vkCreateShaderModule(wVkGlobals::g_Device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create shader module!");
-		}
-
-		return shaderModule;
-	}
-
-
 	// ToDo: Delete this, it's stupid. PipelineInfo is basically this :P 
 	struct FixedFunctionStagesInfo
 	{
@@ -381,11 +346,11 @@ private:
 
 	void createGraphicsPipeline()
 	{
-		const auto vertShaderCode = readFile(wVkConstants::shaderDir + "vert.spv");
-		const auto fragShaderCode = readFile(wVkConstants::shaderDir + "frag.spv");
+		const auto vertShaderCode = wVkHelpers::readFile(wVkConstants::shaderDir + "vert.spv");
+		const auto fragShaderCode = wVkHelpers::readFile(wVkConstants::shaderDir + "frag.spv");
 
-		m_VertShaderModule = createShaderModule(vertShaderCode);
-		m_FragShaderModule = createShaderModule(fragShaderCode);
+		m_VertShaderModule = wVkHelpers::createShaderModule(vertShaderCode);
+		m_FragShaderModule = wVkHelpers::createShaderModule(fragShaderCode);
 
 
 		// To Use the Shaders we need a PipelineShaderStage
@@ -592,7 +557,6 @@ private:
 		renderPassInfo.pDependencies = &dependency;
 
 
-		 
 		if (vkCreateRenderPass(wVkGlobals::g_Device, &renderPassInfo, nullptr, &m_RenderPass) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create render pass!");
 		}
@@ -1079,7 +1043,7 @@ private:
 		}
 	}
 
-	void createComputeDescriptorSetup()
+	/*void createComputeDescriptorSetup()
 	{
 		VkDescriptorSetLayoutBinding layoutBindingsUbo{};
 		layoutBindingsUbo.binding = 0;
@@ -1136,7 +1100,7 @@ private:
 		}
 	}
 
-	void createComputeDescriptorSets() {
+	void createComputeDescriptorSets() { 
 
 		const std::vector<VkDescriptorSetLayout> layoutsUbo(wVkConstants::g_MaxFramesInFlight, m_ComputeDescriptorSetLayoutUbo);
 		const std::vector<VkDescriptorSetLayout> layoutsRead(wVkConstants::g_MaxFramesInFlight, m_ComputeDescriptorSetLayoutRead);
@@ -1145,7 +1109,7 @@ private:
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool = m_ComputeDescPool;
-		allocInfo.descriptorSetCount = static_cast<uint32_t>(wVkConstants::g_MaxFramesInFlight );
+		allocInfo.descriptorSetCount = static_cast<uint32_t>(wVkConstants::g_MaxFramesInFlight);
 		allocInfo.pSetLayouts = layoutsUbo.data();
 
 		m_ComputeDescriptorSetsUbo.resize(wVkConstants::g_MaxFramesInFlight);
@@ -1214,36 +1178,9 @@ private:
 
 	void createComputePipeline()
 	{
-		const auto computeShaderCode = readFile(wVkConstants::shaderDir + "particle.spv");
-		m_ParticleShaderModule = createShaderModule(computeShaderCode);
-
-		VkPipelineShaderStageCreateInfo computeShaderStageInfo{};
-		computeShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		computeShaderStageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-		computeShaderStageInfo.module = m_ParticleShaderModule;
-		computeShaderStageInfo.pName = "main";
-
-		VkDescriptorSetLayout layout[3] = { m_ComputeDescriptorSetLayoutUbo, m_ComputeDescriptorSetLayoutRead, m_ComputeDescriptorSetLayoutWrite};
-		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(std::size(layout));
-		pipelineLayoutInfo.pSetLayouts = layout;
-
-		if (vkCreatePipelineLayout(wVkGlobals::g_Device, &pipelineLayoutInfo, nullptr, &m_ComputePipelineLayout) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create compute pipeline layout!");
-		}
-
-		VkComputePipelineCreateInfo pipelineInfo{};
-		pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-		pipelineInfo.layout = m_ComputePipelineLayout;
-		pipelineInfo.stage = computeShaderStageInfo;
 		
 
-		if (vkCreateComputePipelines(wVkGlobals::g_Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_ComputePipeline) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create compute pipeline!");
-		}
-
-	}
+	} */
 
 	void InitVulkan() {
 
@@ -1269,12 +1206,22 @@ private:
 		createVertexBuffer();
 		createIndexBuffer();
 
+
+
 		// Compute Stuff
 		createShaderStorageBuffers();
-		createComputeDescriptorSetup();
-		createComputeDescriptorPool();
-		createComputeDescriptorSets();
-		createComputePipeline();
+
+		m_ParticleLayout.AddParameter(ShaderParameter::CBV);
+		m_ParticleLayout.AddParameter(ShaderParameter::SRV);
+		m_ParticleLayout.AddParameter(ShaderParameter::UAV);
+		m_ParticleLayout.Initialize();
+
+		m_ParticlePipeline.Initialize(wVkConstants::shaderDir + "particle.spv", m_ParticleLayout);
+
+		//createComputeDescriptorSetup();
+		//createComputeDescriptorPool();
+		//createComputeDescriptorSets();
+		//createComputePipeline();
 
 		createCommandBuffer();
 		createSyncObjects();
@@ -1315,6 +1262,7 @@ private:
 		vkResetFences(wVkGlobals::g_Device, 1, &computeFences);
 
 		vkResetCommandBuffer(compCommandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
+
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = 0; // Optional
@@ -1324,12 +1272,20 @@ private:
 			throw std::runtime_error("failed to begin recording command buffer!");
 		}
 
-		vkCmdBindPipeline(compCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline);
+
+		// Logic
+		m_ComputeCmdList.SetComputePipeline(m_ParticlePipeline);
+		m_ComputeCmdList.BindResourceCBV(0, *m_DtConstbuffer[currentFrame]);
+		m_ComputeCmdList.BindResourceSRV(1, *m_ParticleBuffers[(currentFrame - 1) % wVkConstants::g_MaxFramesInFlight]);
+		m_ComputeCmdList.BindResourceUAV(2, *m_ParticleBuffers[currentFrame + 1 % 2]);
+		m_ComputeCmdList.Dispatch((int)currentFrame, PARTICLE_COUNT / 256, 1, 1);
+
+		/*vkCmdBindPipeline(compCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline);
 		vkCmdBindDescriptorSets(compCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipelineLayout, 0, 1, &m_ComputeDescriptorSetsUbo[currentFrame], 0, 0);
 		vkCmdBindDescriptorSets(compCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipelineLayout, 1, 1, &m_ComputeDescriptorSetsRead[currentFrame], 0, 0);
 		vkCmdBindDescriptorSets(compCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipelineLayout, 2, 1, &m_ComputeDescriptorSetsWrite[currentFrame], 0, 0);
 
-		vkCmdDispatch(compCommandBuffer, PARTICLE_COUNT / 256, 1, 1);
+		vkCmdDispatch(compCommandBuffer, PARTICLE_COUNT / 256, 1, 1);*/
 
 		VkSubmitInfo compSubmitInfo{};
 		compSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1543,10 +1499,10 @@ private:
 		vkDestroyDescriptorSetLayout(wVkGlobals::g_Device, m_DescSetLayout, nullptr);
 		vkDestroyDescriptorPool(wVkGlobals::g_Device, m_DescPool, nullptr);
 
-		vkDestroyDescriptorSetLayout(wVkGlobals::g_Device, m_ComputeDescriptorSetLayoutUbo, nullptr);
-		vkDestroyDescriptorSetLayout(wVkGlobals::g_Device, m_ComputeDescriptorSetLayoutRead, nullptr);
-		vkDestroyDescriptorSetLayout(wVkGlobals::g_Device, m_ComputeDescriptorSetLayoutWrite, nullptr);
-		vkDestroyDescriptorPool(wVkGlobals::g_Device, m_ComputeDescPool, nullptr);
+		//vkDestroyDescriptorSetLayout(wVkGlobals::g_Device, m_ComputeDescriptorSetLayoutUbo, nullptr);
+		//vkDestroyDescriptorSetLayout(wVkGlobals::g_Device, m_ComputeDescriptorSetLayoutRead, nullptr);
+		//vkDestroyDescriptorSetLayout(wVkGlobals::g_Device, m_ComputeDescriptorSetLayoutWrite, nullptr);
+		//vkDestroyDescriptorPool(wVkGlobals::g_Device, m_ComputeDescPool, nullptr);
 
 		for (size_t i = 0; i < wVkConstants::g_MaxFramesInFlight; i++) {
 
@@ -1570,8 +1526,8 @@ private:
 		delete m_VertexBuffer;
 		delete m_IndexBuffer;
 
-		vkDestroyPipeline(wVkGlobals::g_Device, m_ComputePipeline, nullptr);
-		vkDestroyPipelineLayout(wVkGlobals::g_Device, m_ComputePipelineLayout, nullptr);
+		//vkDestroyPipeline(wVkGlobals::g_Device, m_ComputePipeline, nullptr);
+		//vkDestroyPipelineLayout(wVkGlobals::g_Device, m_ComputePipelineLayout, nullptr);
 
 		vkDestroyPipeline(wVkGlobals::g_Device, m_GraphicsPipeline, nullptr);
 		vkDestroyPipeline(wVkGlobals::g_Device, m_GraphicsPipelinePoints, nullptr);
@@ -1579,7 +1535,9 @@ private:
 		vkDestroyPipelineLayout(wVkGlobals::g_Device, m_PipelineLayout, nullptr);
 		vkDestroyRenderPass(wVkGlobals::g_Device, m_RenderPass, nullptr);
 
-		vkDestroyShaderModule(wVkGlobals::g_Device, m_ParticleShaderModule, nullptr);
+		//vkDestroyPipeline(wVkGlobals::g_Device, m_ComputePipeline, nullptr);
+		//vkDestroyPipelineLayout(wVkGlobals::g_Device, m_ComputePipelineLayout, nullptr);
+		//vkDestroyShaderModule(wVkGlobals::g_Device, m_ParticleShaderModule, nullptr);
 		vkDestroyShaderModule(wVkGlobals::g_Device, m_VertShaderModule, nullptr);
 		vkDestroyShaderModule(wVkGlobals::g_Device, m_FragShaderModule, nullptr);
 
@@ -1650,10 +1608,10 @@ private:
 	// Compute Stuff
 	Buffer* m_ParticleBuffers[wVkConstants::g_MaxFramesInFlight] = {};
 	Buffer* m_DtConstbuffer[wVkConstants::g_MaxFramesInFlight] = {};
-	VkDescriptorSetLayout m_ComputeDescriptorSetLayoutUbo = VK_NULL_HANDLE;
+
+	/*VkDescriptorSetLayout m_ComputeDescriptorSetLayoutUbo = VK_NULL_HANDLE;
 	VkDescriptorSetLayout m_ComputeDescriptorSetLayoutRead = VK_NULL_HANDLE;
 	VkDescriptorSetLayout m_ComputeDescriptorSetLayoutWrite = VK_NULL_HANDLE;
-
 
 	VkDescriptorPool m_ComputeDescPool = VK_NULL_HANDLE;
 
@@ -1663,13 +1621,15 @@ private:
 
 	VkShaderModule m_ParticleShaderModule = VK_NULL_HANDLE;
 	VkPipelineLayout m_ComputePipelineLayout = VK_NULL_HANDLE;
-	VkPipeline m_ComputePipeline = VK_NULL_HANDLE;
+
+	*/
+
+
+	ShaderLayout m_ParticleLayout;
+	ComputePipelineDescription m_ParticlePipeline;
 
 	VkFence m_ComputeInFlightFences[wVkConstants::g_MaxFramesInFlight] = {};
 	VkSemaphore m_ComputeFinishedSemaphores[wVkConstants::g_MaxFramesInFlight] = {};
-
-
-
 
 	// GLFW
 	std::string m_WindowName = "VulkanTutorial";

@@ -10,6 +10,11 @@
 Buffer::Buffer(const void* data, const size_t stride, const size_t count, BufferFlags flags,
                const std::string& name)
 {
+	m_Name = name;
+	m_Stride = static_cast<uint32_t>(stride);
+	m_Count = static_cast<uint32_t>(count);
+	m_Flags = flags;
+
 	bool writeNow = true;
 	bool gpuOnly = false;
 

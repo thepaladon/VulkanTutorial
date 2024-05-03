@@ -43,7 +43,8 @@ public:
 	void Reset();
 	// Dispatches a selected number of threads to execute the binded shader (can sync all the GPU-CPU resources for
 	// PS5 in prior to launch)
-	void Dispatch(const uint32_t x, const uint32_t y = 1, const uint32_t z = 1, bool syncBeforeDispatch = false);
+	void Dispatch(int currentFrame, const uint32_t numThreadGroupsX, const uint32_t numThreadGroupsY = 1, const uint32_t numThreadGroupsZ
+		              = 1, bool syncBeforeDispatch = false);
 
 	// Getters
 	GPUCommandListHandle& GetCommandListHandleRef() { return m_CmdListHandle; }

@@ -10,9 +10,9 @@ struct Particle {
     float4 velocity;
 };
 
-ConstantBuffer<ConstantData> settings : register(b0, space0);
-StructuredBuffer<Particle> particlesIn : register(t0, space1);
-RWStructuredBuffer<Particle> particlesOut : register(u0, space2);
+ConstantBuffer<ConstantData> settings : register(b0);
+StructuredBuffer<Particle> particlesIn : register(t1);
+RWStructuredBuffer<Particle> particlesOut : register(u2);
 
 [numthreads(256, 1, 1)]
 void main(uint3 DTid : SV_DispatchThreadID)

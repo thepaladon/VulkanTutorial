@@ -95,7 +95,7 @@ namespace wVkHelpers {
 		const VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
 		const VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities, window);
 
-		uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
+		uint32_t imageCount = wVkConstants::g_NumSwapChainImages;
 
 		if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
 			imageCount = swapChainSupport.capabilities.maxImageCount;

@@ -5,7 +5,6 @@
 
 void ComputePipelineDescription::Initialize(const std::string& shaderName, ShaderLayout& layout)
 {
-
 	// Shader Init;
 	const auto computeShaderCode = wVkHelpers::readFile(shaderName);
 	m_PipelineHandle.m_ShaderModule = wVkHelpers::createShaderModule(computeShaderCode);

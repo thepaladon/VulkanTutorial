@@ -697,7 +697,7 @@ private:
 		renderPassInfo.renderArea.extent = wVkGlobals::g_SwapChain.swapChainExtent;
 
 		std::array<VkClearValue, 2> clearValues{};
-		clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+		clearValues[0].color = { m_ClearColor.r, m_ClearColor.g, m_ClearColor.b, m_ClearColor.a};
 		clearValues[1].depthStencil = { 1.0f, 0 };
 
 		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -871,6 +871,7 @@ private:
 			const BufferFlags flags = BufferFlags::CBV;
 			std::string name = "DeltaTime Buffer for Particles " + std::to_string(i);
 			m_DtConstbuffer[i] = new Buffer(nullptr, sizeof(float), 1, flags, name);
+			m_ColourBuffer[i] = new Buffer(nullptr, sizeof(glm::vec4), 1, flags, name);
 		}
 	}
 
@@ -1192,7 +1193,7 @@ private:
 		createDtBuffers();
 
 		createTextureImage();
-		m_Sampler = new Sampler(MinFilter::LINEAR_MIPMAP_LINEAR, MagFilter::NEAREST, WrapUV::REPEAT);
+		m_Sampler = new Sampler(MinFilter::NEAREST_MIPMAP_NEAREST, MagFilter::NEAREST, WrapUV::MIRRORED_REPEAT);
 
 		createDescriptorSetLayout();
 		createDescriptorPool();
@@ -1211,6 +1212,7 @@ private:
 		// Compute Stuff
 		createShaderStorageBuffers();
 
+		m_ParticleLayout.AddParameter(ShaderParameter::CBV);
 		m_ParticleLayout.AddParameter(ShaderParameter::CBV);
 		m_ParticleLayout.AddParameter(ShaderParameter::SRV);
 		m_ParticleLayout.AddParameter(ShaderParameter::UAV);
@@ -1244,6 +1246,7 @@ private:
 
 	void updateDtBuffer(uint32_t currentImage, float dt) {
 		m_DtConstbuffer[currentImage]->UpdateData(&dt, sizeof(float));
+		m_ColourBuffer[currentImage]->UpdateData(&m_ParticleColor, sizeof(m_ParticleColor));
 	}
 
 	void drawFrame(double dt)
@@ -1276,8 +1279,9 @@ private:
 		// Logic
 		m_ComputeCmdList.SetComputePipeline(m_ParticlePipeline);
 		m_ComputeCmdList.BindResourceCBV(0, *m_DtConstbuffer[currentFrame]);
-		m_ComputeCmdList.BindResourceSRV(1, *m_ParticleBuffers[(currentFrame - 1) % wVkConstants::g_MaxFramesInFlight]);
-		m_ComputeCmdList.BindResourceUAV(2, *m_ParticleBuffers[currentFrame % wVkConstants::g_MaxFramesInFlight]);
+		m_ComputeCmdList.BindResourceCBV(1, *m_ColourBuffer[currentFrame]);
+		m_ComputeCmdList.BindResourceSRV(2, *m_ParticleBuffers[(currentFrame - 1) % wVkConstants::g_MaxFramesInFlight]);
+		m_ComputeCmdList.BindResourceUAV(3, *m_ParticleBuffers[currentFrame % wVkConstants::g_MaxFramesInFlight]);
 		m_ComputeCmdList.Dispatch((int)currentFrame, PARTICLE_COUNT / 256, 1, 1);
 
 		VkSubmitInfo compSubmitInfo{};
@@ -1390,6 +1394,7 @@ private:
 			LOG_ERROR("ASSIMP Error: %s", importer.GetErrorString());
 		}
 
+		
 		int width, height, channels;
 
 		// Load the image
@@ -1456,6 +1461,9 @@ private:
 				camera.UpdateCamera(io.DisplaySize.x, io.DisplaySize.y);
 
 				ImGui::Begin("Gizmo Transform");
+
+				ImGui::ColorEdit4("Clear Color", &m_ClearColor[0]);
+				ImGui::ColorEdit4("Particles Color", &m_ParticleColor[0]);
 				EditTransform(camera, cubeModel.GetModelMatrixPtr());
 				ImGui::End();
 
@@ -1497,6 +1505,7 @@ private:
 			delete m_CameraBuffer[i];
 			delete m_ParticleBuffers[i];
 			delete m_DtConstbuffer[i];
+			delete m_ColourBuffer[i];
 
 			vkDestroySemaphore(wVkGlobals::g_Device, m_ImageAvailableSemaphore[i], nullptr);
 			vkDestroySemaphore(wVkGlobals::g_Device, m_RenderFinishedSemaphore[i], nullptr);
@@ -1592,21 +1601,9 @@ private:
 	Buffer* m_ParticleBuffers[wVkConstants::g_MaxFramesInFlight] = {};
 	Buffer* m_DtConstbuffer[wVkConstants::g_MaxFramesInFlight] = {};
 
-	/*VkDescriptorSetLayout m_ComputeDescriptorSetLayoutUbo = VK_NULL_HANDLE;
-	VkDescriptorSetLayout m_ComputeDescriptorSetLayoutRead = VK_NULL_HANDLE;
-	VkDescriptorSetLayout m_ComputeDescriptorSetLayoutWrite = VK_NULL_HANDLE;
-
-	VkDescriptorPool m_ComputeDescPool = VK_NULL_HANDLE;
-
-	std::vector<VkDescriptorSet> m_ComputeDescriptorSetsUbo;
-	std::vector<VkDescriptorSet> m_ComputeDescriptorSetsRead;
-	std::vector<VkDescriptorSet> m_ComputeDescriptorSetsWrite;
-
-	VkShaderModule m_ParticleShaderModule = VK_NULL_HANDLE;
-	VkPipelineLayout m_ComputePipelineLayout = VK_NULL_HANDLE;
-
-	*/
-
+	glm::vec4 m_ParticleColor = glm::vec4(1.0f);
+	glm::vec4 m_ClearColor = glm::vec4(0.0f);
+	Buffer* m_ColourBuffer[wVkConstants::g_MaxFramesInFlight] = {};
 
 	ShaderLayout m_ParticleLayout;
 	ComputePipelineDescription m_ParticlePipeline;

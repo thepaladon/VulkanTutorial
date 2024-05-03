@@ -5,7 +5,7 @@
 namespace wVkConstants {
 
 	// Useful variables
-	//#define USE_HLSL 1
+	// #define USE_HLSL 1
 	constexpr uint32_t g_MaxFramesInFlight = 2; // Assuming you manage multiple frames in flight
 	constexpr uint32_t g_NumSwapChainImages = 2;
 
@@ -13,6 +13,7 @@ namespace wVkConstants {
 	const std::vector<const char*> validationLayers = {
 		"VK_LAYER_KHRONOS_validation"
 	};
+	
 
 	const std::vector<const char*> deviceExtensions = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,

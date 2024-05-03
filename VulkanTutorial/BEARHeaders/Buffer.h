@@ -40,6 +40,17 @@ public:
 
 	~Buffer();
 
+	// Delete copy constructor and copy assignment operator as it mirrors GPU resource
+	Buffer(const Buffer&) = delete;
+	Buffer& operator=(const Buffer&) = delete;
+
+	// Explicitly define move constructor and move assignment operator as it mirrors GPU resource
+	Buffer(Buffer&& other) noexcept {}
+	Buffer& operator=(Buffer&& other) noexcept {
+		return *this;
+	}
+
+
 	uint32_t GetNumElements() const { return m_Count; }
 	uint32_t GetStride() const { return m_Stride; } // in Bytes
 	uint32_t GetSizeBytes() const { return m_Count * m_Stride; } // in Bytes

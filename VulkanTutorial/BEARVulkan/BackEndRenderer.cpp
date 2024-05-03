@@ -82,7 +82,6 @@ void BackEndRenderer::Initialize(GLFWwindow* window, Texture** mainRenderTargets
 
 	g_CommandPool = wVkHelpers::createCommandPool();
 
-
 	wVkHelpers::initImgui(window, g_ImGuiRenderPass, g_ImguiPool);
 
 }
@@ -121,9 +120,11 @@ void BackEndRenderer::Shutdown()
 {
 	destroySwapchain();
 
-	ImGui_ImplGlfw_Shutdown();
+	// Shut Down ImGui
 	ImGui_ImplVulkan_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
+
 	vkDestroyDescriptorPool(g_Device, g_ImguiPool, nullptr);
 	vkDestroyRenderPass(g_Device, g_ImGuiRenderPass, nullptr);
 
@@ -134,6 +135,8 @@ void BackEndRenderer::Shutdown()
 	}
 
 	vkDestroySurfaceKHR(g_Instance, g_Surface, nullptr);
+
+
 
 	// Need to be last
 	vkDestroyDevice(g_Device, nullptr);

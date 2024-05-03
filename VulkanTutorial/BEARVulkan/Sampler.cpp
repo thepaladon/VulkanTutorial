@@ -104,8 +104,9 @@ Sampler::Sampler(MinFilter minFilter, MagFilter magFilter, WrapUV wrapUV)
     };
 }
 
-void Sampler::Destroy() 
+Sampler::~Sampler()
 {
     vkDestroySampler(wVkGlobals::g_Device, m_SamplerHandle.m_Sampler, nullptr);
 }
+
 

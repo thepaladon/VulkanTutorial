@@ -14,12 +14,16 @@ void ComputePipelineDescription::Initialize(const std::string& shaderName, Shade
 	// - Descriptor Pool
 	// - Descriptor Sets & Layouts
 	// - Pipeline
-
 }
 
 void ComputePipelineDescription::Destroy()
 {
 	vkDestroyShaderModule(wVkGlobals::g_Device, m_PipelineHandle.m_ShaderModule, nullptr);
+	vkDestroyPipeline(wVkGlobals::g_Device, m_PipelineHandle.m_Pipeline, nullptr);
+	vkDestroyPipelineLayout(wVkGlobals::g_Device, m_PipelineHandle.m_PipelineLayout, nullptr);
+	vkDestroyDescriptorSetLayout(wVkGlobals::g_Device, m_PipelineHandle.m_DescSetLayout, nullptr);
+	vkDestroyDescriptorPool(wVkGlobals::g_Device, m_PipelineHandle.m_DescriptorPool, nullptr);
+
 }
 
 

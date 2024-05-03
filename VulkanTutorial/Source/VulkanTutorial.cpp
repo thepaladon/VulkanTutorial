@@ -1280,13 +1280,6 @@ private:
 		m_ComputeCmdList.BindResourceUAV(2, *m_ParticleBuffers[currentFrame % wVkConstants::g_MaxFramesInFlight]);
 		m_ComputeCmdList.Dispatch((int)currentFrame, PARTICLE_COUNT / 256, 1, 1);
 
-		/*vkCmdBindPipeline(compCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline);
-		vkCmdBindDescriptorSets(compCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipelineLayout, 0, 1, &m_ComputeDescriptorSetsUbo[currentFrame], 0, 0);
-		vkCmdBindDescriptorSets(compCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipelineLayout, 1, 1, &m_ComputeDescriptorSetsRead[currentFrame], 0, 0);
-		vkCmdBindDescriptorSets(compCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipelineLayout, 2, 1, &m_ComputeDescriptorSetsWrite[currentFrame], 0, 0);
-
-		vkCmdDispatch(compCommandBuffer, PARTICLE_COUNT / 256, 1, 1);*/
-
 		VkSubmitInfo compSubmitInfo{};
 		compSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		compSubmitInfo.commandBufferCount = 1;
@@ -1499,11 +1492,6 @@ private:
 		vkDestroyDescriptorSetLayout(wVkGlobals::g_Device, m_DescSetLayout, nullptr);
 		vkDestroyDescriptorPool(wVkGlobals::g_Device, m_DescPool, nullptr);
 
-		//vkDestroyDescriptorSetLayout(wVkGlobals::g_Device, m_ComputeDescriptorSetLayoutUbo, nullptr);
-		//vkDestroyDescriptorSetLayout(wVkGlobals::g_Device, m_ComputeDescriptorSetLayoutRead, nullptr);
-		//vkDestroyDescriptorSetLayout(wVkGlobals::g_Device, m_ComputeDescriptorSetLayoutWrite, nullptr);
-		//vkDestroyDescriptorPool(wVkGlobals::g_Device, m_ComputeDescPool, nullptr);
-
 		for (size_t i = 0; i < wVkConstants::g_MaxFramesInFlight; i++) {
 
 			delete m_CameraBuffer[i];
@@ -1519,15 +1507,14 @@ private:
 		}
 
 
-		delete m_Sampler;
 		delete m_Texture;
+		delete m_Sampler;
 
 		// Destroy our draw buffers
 		delete m_VertexBuffer;
 		delete m_IndexBuffer;
 
-		//vkDestroyPipeline(wVkGlobals::g_Device, m_ComputePipeline, nullptr);
-		//vkDestroyPipelineLayout(wVkGlobals::g_Device, m_ComputePipelineLayout, nullptr);
+		m_ParticlePipeline.Destroy();
 
 		vkDestroyPipeline(wVkGlobals::g_Device, m_GraphicsPipeline, nullptr);
 		vkDestroyPipeline(wVkGlobals::g_Device, m_GraphicsPipelinePoints, nullptr);
@@ -1535,9 +1522,6 @@ private:
 		vkDestroyPipelineLayout(wVkGlobals::g_Device, m_PipelineLayout, nullptr);
 		vkDestroyRenderPass(wVkGlobals::g_Device, m_RenderPass, nullptr);
 
-		//vkDestroyPipeline(wVkGlobals::g_Device, m_ComputePipeline, nullptr);
-		//vkDestroyPipelineLayout(wVkGlobals::g_Device, m_ComputePipelineLayout, nullptr);
-		//vkDestroyShaderModule(wVkGlobals::g_Device, m_ParticleShaderModule, nullptr);
 		vkDestroyShaderModule(wVkGlobals::g_Device, m_VertShaderModule, nullptr);
 		vkDestroyShaderModule(wVkGlobals::g_Device, m_FragShaderModule, nullptr);
 
@@ -1546,7 +1530,6 @@ private:
 
 		glfwDestroyWindow(m_Window);
 		glfwTerminate();
-
 	}
 
 	uint32_t currentFrame = 0;

@@ -119,14 +119,12 @@ void CommandList::Reset()
 void CommandList::Dispatch(int currentFrame, const uint32_t numThreadGroupsX, const uint32_t numThreadGroupsY,
 	const uint32_t numThreadGroupsZ, bool syncBeforeDispatch)
 {
-
 	auto& shaderLayout = g_boundPipeline->GetShaderLayoutRef();
 	auto& boundPipeline = g_boundPipeline->GetPipelineHandleRef();
 
 	const auto& shaderParams = shaderLayout.GetShaderLayoutHandleRef().m_BindingCache;
 
 	static bool doOnce = true;
-
 	if (doOnce) {
 		// CREATE DESCRIPTOR SET LAYOUT -------------
 		std::vector<VkDescriptorSetLayoutBinding> bindings;
@@ -149,11 +147,11 @@ void CommandList::Dispatch(int currentFrame, const uint32_t numThreadGroupsX, co
 		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
 		layoutInfo.pBindings = bindings.data();
 
-
 		if (vkCreateDescriptorSetLayout(wVkGlobals::g_Device, &layoutInfo, nullptr, &boundPipeline.m_DescSetLayout) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create compute descriptor set layout!");
 		}
 		// END CREATE DESCRIPTOR SET LAYOUT -------------
+
 
 		// CREATE DESCRIPTOR POOL -----------------------------
 		std::vector<VkDescriptorPoolSize> poolSizes(2);
@@ -186,6 +184,34 @@ void CommandList::Dispatch(int currentFrame, const uint32_t numThreadGroupsX, co
 		if (vkAllocateDescriptorSets(wVkGlobals::g_Device, &allocInfo, boundPipeline.m_DescriptorSets.data()) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to allocate compute descriptor sets!");
 		}
+
+		// CREATE PIPELINE -----------------
+		VkPipelineShaderStageCreateInfo computeShaderStageInfo{};
+		computeShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		computeShaderStageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		computeShaderStageInfo.module = boundPipeline.m_ShaderModule;
+		computeShaderStageInfo.pName = "main";
+
+		VkDescriptorSetLayout layout[] = { boundPipeline.m_DescSetLayout };
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(std::size(layout));
+		pipelineLayoutInfo.pSetLayouts = layout;
+
+		if (vkCreatePipelineLayout(wVkGlobals::g_Device, &pipelineLayoutInfo, nullptr, &boundPipeline.m_PipelineLayout) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create compute pipeline layout!");
+		}
+
+		VkComputePipelineCreateInfo pipelineInfo{};
+		pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipelineInfo.layout = boundPipeline.m_PipelineLayout;
+		pipelineInfo.stage = computeShaderStageInfo;
+
+
+		if (vkCreateComputePipelines(wVkGlobals::g_Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &boundPipeline.m_Pipeline) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create compute pipeline!");
+		}
+		// END CREATE PIPELINE -----------------
 
 		doOnce = false;
 	}
@@ -220,38 +246,7 @@ void CommandList::Dispatch(int currentFrame, const uint32_t numThreadGroupsX, co
 	{
 		delete desc.pBufferInfo;
 	}
-
-	// ToDo
 	// END CREATE DESCRIPTOR SETS -------
-
-	// CREATE PIPELINE -----------------
-	VkPipelineShaderStageCreateInfo computeShaderStageInfo{};
-	computeShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	computeShaderStageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-	computeShaderStageInfo.module = boundPipeline.m_ShaderModule;
-	computeShaderStageInfo.pName = "main";
-
-	VkDescriptorSetLayout layout[] = { boundPipeline.m_DescSetLayout };
-	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(std::size(layout));
-	pipelineLayoutInfo.pSetLayouts = layout;
-
-	if (vkCreatePipelineLayout(wVkGlobals::g_Device, &pipelineLayoutInfo, nullptr, &boundPipeline.m_PipelineLayout) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create compute pipeline layout!");
-	}
-
-	VkComputePipelineCreateInfo pipelineInfo{};
-	pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-	pipelineInfo.layout = boundPipeline.m_PipelineLayout;
-	pipelineInfo.stage = computeShaderStageInfo;
-
-
-	if (vkCreateComputePipelines(wVkGlobals::g_Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &boundPipeline.m_Pipeline) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create compute pipeline!");
-	}
-	// END CREATE PIPELINE -----------------
-
 
 	// ToDo : Command Buffer indexing, won't work without it
 	const VkCommandBuffer commandBuffer = m_CmdListHandle.m_CommandBuffer[currentFrame];

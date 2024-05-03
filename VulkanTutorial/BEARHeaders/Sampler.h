@@ -117,12 +117,20 @@ class Sampler
 public:
 
 	Sampler() = delete;
+	~Sampler();
+
 	Sampler(MinFilter minFilter, MagFilter magFilter, WrapUV wrapUV);
-	
+
+	// Delete copy constructor and copy assignment operator as it mirrors GPU resource
 	Sampler(const Sampler&) = delete;
 	Sampler& operator=(const Sampler&) = delete;
 
-	void Destroy();
+	// Explicitly define move constructor and move assignment operator as it mirrors GPU resource
+	Sampler(Sampler&& other) noexcept {}
+	Sampler& operator=(Sampler&& other) noexcept {
+		return *this;
+	}
+
 
 	GPUSamplerHandle GetGPUHandle() const { return m_SamplerHandle; }
 	GPUSamplerHandle& GetGPUHandleRef() { return m_SamplerHandle; }

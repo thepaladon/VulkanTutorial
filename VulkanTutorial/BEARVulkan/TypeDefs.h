@@ -27,6 +27,7 @@ enum class DataType
 	MAX_ENUM = 0xffff
 };
 
+// We do the Pipeline Construction before the first use of Dispatch
 struct ShaderBindingData
 {
 	uint32_t m_BindingLocation = UINT32_MAX;
@@ -37,21 +38,21 @@ struct ShaderBindingData
 
 struct wVkPipelineLayout
 {
-	std::vector<ShaderParameter> m_Parameters;
 	std::vector<ShaderBindingData> m_BindingCache;
 };
 
 struct wVkComputePipeline
 {
+	// Initial Set-up
 	VkShaderModule m_ShaderModule = VK_NULL_HANDLE;
 	VkPipeline m_Pipeline = VK_NULL_HANDLE;
 	VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
-
-	// ass many as frames in flight
-	std::vector<VkDescriptorSet> m_DescriptorSets;
 	VkDescriptorSetLayout m_DescSetLayout = VK_NULL_HANDLE;
 	VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
 
+	// Run-time
+	std::vector<VkDescriptorSet> m_DescriptorSets;
+	
 };
 
 struct wVkRenderTarget

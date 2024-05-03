@@ -56,8 +56,17 @@ public:
 	// Constructing a texture from raw data
 	Texture(const void* data, TextureSpec spec, const std::string& name = "default_name");
 
-	// Todo Texture GPU Deallocation (PS5)
 	~Texture();
+
+	// Delete copy constructor and copy assignment operator as it mirrors GPU resource
+	Texture(const Texture&) = delete;
+	Texture& operator=(const Texture&) = delete;
+
+	// Explicitly define move constructor and move assignment operator as it mirrors GPU resource
+	Texture(Texture&& other) noexcept {}
+	Texture& operator=(Texture&& other) noexcept {
+		return *this;
+	}
 
 	// Only works for RenderTarget - Windows
 	// Workaround for `ResizeFrameBuffers`

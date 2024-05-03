@@ -1277,7 +1277,7 @@ private:
 		m_ComputeCmdList.SetComputePipeline(m_ParticlePipeline);
 		m_ComputeCmdList.BindResourceCBV(0, *m_DtConstbuffer[currentFrame]);
 		m_ComputeCmdList.BindResourceSRV(1, *m_ParticleBuffers[(currentFrame - 1) % wVkConstants::g_MaxFramesInFlight]);
-		m_ComputeCmdList.BindResourceUAV(2, *m_ParticleBuffers[currentFrame + 1 % 2]);
+		m_ComputeCmdList.BindResourceUAV(2, *m_ParticleBuffers[currentFrame % wVkConstants::g_MaxFramesInFlight]);
 		m_ComputeCmdList.Dispatch((int)currentFrame, PARTICLE_COUNT / 256, 1, 1);
 
 		/*vkCmdBindPipeline(compCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline);

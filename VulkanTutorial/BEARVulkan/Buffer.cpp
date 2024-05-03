@@ -121,4 +121,3 @@ Buffer::~Buffer()
 	vkDestroyBuffer(wVkGlobals::g_Device, m_BufferHandle.m_Buffers, nullptr);
 	vkFreeMemory(wVkGlobals::g_Device, m_BufferHandle.m_BuffersMemory, nullptr);
 }
-

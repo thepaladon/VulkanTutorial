@@ -181,8 +181,7 @@ const std::vector<uint16_t> g_indices = {
 	4, 5, 6, 6, 7, 4
 };
 
-
-void EditTransform(FreeCamera& camera, glm::mat4* matrix)
+ void EditTransform(FreeCamera& camera, glm::mat4* matrix)
 {
 	// Settings / Default Params
 	constexpr ImGuiKey translateKey = ImGuiKey_1;
@@ -204,7 +203,6 @@ void EditTransform(FreeCamera& camera, glm::mat4* matrix)
 	ImGui::Checkbox("Draw Grid", &drawGrid);
 
 	ImGuizmo::Enable(drawGizmo);
-
 
 	if (ImGui::IsKeyPressed(translateKey))
 		mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
@@ -493,74 +491,6 @@ private:
 
 	void createRenderPass() {
 
-		VkAttachmentDescription colorAttachment{};
-		colorAttachment.format = wVkGlobals::g_SwapChain.swapChainImageFormat;
-		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-
-		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-
-		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;   // No Stencil yet
-		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // No Stencil yet
-
-		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // ImGui sets it to "Present" 
-		// VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL: Images used as color attachment
-		// VK_IMAGE_LAYOUT_PRESENT_SRC_KHR: Images to be presented in the swap chain
-		// VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL: Images to be used as destination for a memory copy operation
-
-		VkAttachmentDescription depthAttachment{};
-		depthAttachment.format = wVkHelpers::findDepthFormat();
-		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentReference depthAttachmentRef{};
-		depthAttachmentRef.attachment = 1;
-		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		// Sub-passes and attachments
-		VkAttachmentReference colorAttachmentRef{};
-		colorAttachmentRef.attachment = 0;
-		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkSubpassDescription subpass{};
-		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = 1;
-		subpass.pColorAttachments = &colorAttachmentRef;
-		subpass.pDepthStencilAttachment = &depthAttachmentRef;
-		// The index of the attachment in this array is directly referenced from the fragment shader with the layout(location = 0) out vec4 outColor directive!
-
-		// This dependency is for vkAcquireNextImageKHR if I understood
-		// We want to wait for the swapchain to finish reading the image
-		VkSubpassDependency dependency{};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcAccessMask = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-
-		std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
-		VkRenderPassCreateInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-		renderPassInfo.pAttachments = attachments.data();
-		renderPassInfo.subpassCount = 1;
-		renderPassInfo.pSubpasses = &subpass;
-		renderPassInfo.dependencyCount = 1;
-		renderPassInfo.pDependencies = &dependency;
-
-
-		if (vkCreateRenderPass(wVkGlobals::g_Device, &renderPassInfo, nullptr, &m_RenderPass) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create render pass!");
-		}
-
 		VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 
@@ -579,7 +509,7 @@ private:
 		pipelineInfo.pDynamicState = &m_FixedFuncStages.dynamicState;
 
 		pipelineInfo.layout = m_PipelineLayout; // Empty 
-		pipelineInfo.renderPass = m_RenderPass;
+		pipelineInfo.renderPass = wVkGlobals::g_RenderPass;
 		pipelineInfo.subpass = 0;
 
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
@@ -623,7 +553,7 @@ private:
 		pipelineInfo.pDynamicState = &m_FixedFuncStages.dynamicState;
 
 		pipelineInfo.layout = m_PipelineLayout; // Empty 
-		pipelineInfo.renderPass = m_RenderPass;
+		pipelineInfo.renderPass = wVkGlobals::g_RenderPass;
 		pipelineInfo.subpass = 0;
 
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
@@ -635,31 +565,6 @@ private:
 
 	}
 
-	void createFramebuffers() {
-		m_SwapChainFramebuffers.resize(wVkGlobals::g_SwapChainImageViews.size());
-
-		for (size_t i = 0; i < wVkGlobals::g_SwapChainImageViews.size(); i++) {
-			std::array<VkImageView, 2> attachments = {
-				wVkGlobals::g_SwapChainImageViews[i],
-				m_DepthImageView
-			};
-
-			VkFramebufferCreateInfo framebufferInfo{};
-			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebufferInfo.renderPass = m_RenderPass;
-			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-			framebufferInfo.pAttachments = attachments.data();
-			framebufferInfo.width = wVkGlobals::g_SwapChain.swapChainExtent.width;
-			framebufferInfo.height = wVkGlobals::g_SwapChain.swapChainExtent.height;
-			framebufferInfo.layers = 1;
-
-			if (vkCreateFramebuffer(wVkGlobals::g_Device, &framebufferInfo, nullptr, &m_SwapChainFramebuffers[i]) != VK_SUCCESS) {
-				throw std::runtime_error("failed to create framebuffer!");
-			}
-		}
-	}
-
-	
 
 	void createCommandBuffer()
 	{
@@ -690,8 +595,8 @@ private:
 
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = m_RenderPass;
-		renderPassInfo.framebuffer = m_SwapChainFramebuffers[imageIndex];
+		renderPassInfo.renderPass = wVkGlobals::g_RenderPass;
+		renderPassInfo.framebuffer = wVkGlobals::g_SwapChainFramebuffers[imageIndex];
 
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = wVkGlobals::g_SwapChain.swapChainExtent;
@@ -748,7 +653,7 @@ private:
 		barrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 		barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT ;
-		barrier.image = m_DepthImage;
+		barrier.image = wVkGlobals::g_DepthImage;
 		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 		barrier.subresourceRange.baseMipLevel = 0;
 		barrier.subresourceRange.levelCount = 1;
@@ -769,7 +674,7 @@ private:
 			VkRenderPassBeginInfo info = {};
 			info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			info.renderPass = wVkGlobals::g_ImGuiRenderPass;
-			info.framebuffer = m_SwapChainFramebuffers[imageIndex];
+			info.framebuffer = wVkGlobals::g_SwapChainFramebuffers[imageIndex];
 			info.renderArea.offset = { 0 , 0 };
 			info.renderArea.extent = wVkGlobals::g_SwapChain.swapChainExtent;
 			info.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -814,39 +719,9 @@ private:
 	{
 		vkDeviceWaitIdle(wVkGlobals::g_Device);
 
-		destroySwapchain();
 		m_BackEndRenderer.ResizeFrameBuffers(m_Window);
-
-		createDepthResources();
-		createFramebuffers();
 	}
 
-	void destroySwapchain()
-	{
-		for (const auto framebuffer : m_SwapChainFramebuffers) {
-			vkDestroyFramebuffer(wVkGlobals::g_Device, framebuffer, nullptr);
-		}
-
-		// moved to m_BackEndRenderer.ResizeFrameBuffers(m_Window);
-
-		vkDestroyImageView(wVkGlobals::g_Device, m_DepthImageView, nullptr);
-		vkDestroyImage(wVkGlobals::g_Device, m_DepthImage, nullptr);
-		vkFreeMemory(wVkGlobals::g_Device, m_DepthImageMemory, nullptr);
-	}
-
-	void createVertexBuffer()
-	{
-		const BufferFlags vbFlags = BufferFlags::SRV | BufferFlags::VERTEX_BUFFER;
-		const std::string vbName = "Vertex Buffer";
-		m_VertexBuffer = new Buffer(g_vertices.data(), sizeof(g_vertices[0]), g_vertices.size(), vbFlags, vbName);
-	}
-
-	void createIndexBuffer()
-	{
-		const BufferFlags vbFlags = BufferFlags::SRV | BufferFlags::INDEX_BUFFER;
-		const std::string vbName = "Index Buffer";
-		m_IndexBuffer = new Buffer(g_indices.data(), sizeof(g_indices[0]), g_indices.size(), vbFlags, vbName);
-	}
 
 	void createUniformBuffers() {
 		for (size_t i = 0; i < wVkConstants::g_MaxFramesInFlight; i++) {
@@ -997,15 +872,7 @@ private:
 	}
 
 
-	void createDepthResources()
-	{
-		const VkFormat depthFormat = wVkHelpers::findDepthFormat();
 
-		const auto& ext = wVkGlobals::g_SwapChain.swapChainExtent;
-		wVkHelpers::createImage2D(ext.width, ext.height, 1, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthImage, m_DepthImageMemory);
-
-		m_DepthImageView = wVkHelpers::createImageView(m_DepthImage, 1, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
-	}
 
 	void createShaderStorageBuffers()
 	{
@@ -1044,148 +911,7 @@ private:
 		}
 	}
 
-	/*void createComputeDescriptorSetup()
-	{
-		VkDescriptorSetLayoutBinding layoutBindingsUbo{};
-		layoutBindingsUbo.binding = 0;
-		layoutBindingsUbo.descriptorCount = 1;
-		layoutBindingsUbo.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		layoutBindingsUbo.pImmutableSamplers = nullptr;
-		layoutBindingsUbo.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-		VkDescriptorSetLayoutBinding layoutBindingsStorage{};
-		layoutBindingsStorage.binding = 0;
-		layoutBindingsStorage.descriptorCount = 1;
-		layoutBindingsStorage.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		layoutBindingsStorage.pImmutableSamplers = nullptr;
-		layoutBindingsStorage.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-
-		VkDescriptorSetLayoutCreateInfo layoutInfo{};
-		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = 1;
-		layoutInfo.pBindings = &layoutBindingsUbo;
-
-		if (vkCreateDescriptorSetLayout(wVkGlobals::g_Device, &layoutInfo, nullptr, &m_ComputeDescriptorSetLayoutUbo) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create compute descriptor set layout!");
-		}
-
-		layoutInfo.pBindings = &layoutBindingsStorage;
-		if (vkCreateDescriptorSetLayout(wVkGlobals::g_Device, &layoutInfo, nullptr, &m_ComputeDescriptorSetLayoutRead) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create compute descriptor set layout!");
-		}
-
-		layoutInfo.pBindings = &layoutBindingsStorage;
-		if (vkCreateDescriptorSetLayout(wVkGlobals::g_Device, &layoutInfo, nullptr, &m_ComputeDescriptorSetLayoutWrite) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create compute descriptor set layout!");
-		}
-
-	}
-
-	void createComputeDescriptorPool()
-	{
-		std::array<VkDescriptorPoolSize, 2> poolSizes{};
-		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = static_cast<uint32_t>(wVkConstants::g_MaxFramesInFlight) * 1;
-		poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		poolSizes[1].descriptorCount = static_cast<uint32_t>(wVkConstants::g_MaxFramesInFlight) * 2;
-
-		VkDescriptorPoolCreateInfo poolInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-		poolInfo.pPoolSizes = poolSizes.data();
-		poolInfo.maxSets = static_cast<uint32_t>(wVkConstants::g_MaxFramesInFlight * 3);
-
-		if (vkCreateDescriptorPool(wVkGlobals::g_Device, &poolInfo, nullptr, &m_ComputeDescPool) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create descriptor pool!");
-		}
-	}
-
-	void createComputeDescriptorSets() { 
-
-		const std::vector<VkDescriptorSetLayout> layoutsUbo(wVkConstants::g_MaxFramesInFlight, m_ComputeDescriptorSetLayoutUbo);
-		const std::vector<VkDescriptorSetLayout> layoutsRead(wVkConstants::g_MaxFramesInFlight, m_ComputeDescriptorSetLayoutRead);
-		const std::vector<VkDescriptorSetLayout> layoutsWrite(wVkConstants::g_MaxFramesInFlight, m_ComputeDescriptorSetLayoutWrite);
-
-		VkDescriptorSetAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.descriptorPool = m_ComputeDescPool;
-		allocInfo.descriptorSetCount = static_cast<uint32_t>(wVkConstants::g_MaxFramesInFlight);
-		allocInfo.pSetLayouts = layoutsUbo.data();
-
-		m_ComputeDescriptorSetsUbo.resize(wVkConstants::g_MaxFramesInFlight);
-		m_ComputeDescriptorSetsRead.resize(wVkConstants::g_MaxFramesInFlight);
-		m_ComputeDescriptorSetsWrite.resize(wVkConstants::g_MaxFramesInFlight);
-
-		if (vkAllocateDescriptorSets(wVkGlobals::g_Device, &allocInfo, m_ComputeDescriptorSetsUbo.data()) != VK_SUCCESS) {
-			throw std::runtime_error("1 failed to allocate compute descriptor sets!");
-		}
-
-		allocInfo.pSetLayouts = layoutsRead.data();
-		if (vkAllocateDescriptorSets(wVkGlobals::g_Device, &allocInfo, m_ComputeDescriptorSetsRead.data()) != VK_SUCCESS) {
-			throw std::runtime_error("2 failed to allocate compute descriptor sets!");
-		}
-
-		allocInfo.pSetLayouts = layoutsWrite.data();
-		if (vkAllocateDescriptorSets(wVkGlobals::g_Device, &allocInfo, m_ComputeDescriptorSetsWrite.data()) != VK_SUCCESS) {
-			throw std::runtime_error("3 failed to allocate compute descriptor sets!");
-		}
-
-		for (size_t i = 0; i < wVkConstants::g_MaxFramesInFlight; i++) {
-			VkDescriptorBufferInfo uniformBufferInfo{};
-			uniformBufferInfo.buffer = m_DtConstbuffer[i]->GetGPUHandleRef().m_Buffers; //deltaTime
-			uniformBufferInfo.offset = 0;
-			uniformBufferInfo.range = sizeof(float);
-
-			std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
-			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = m_ComputeDescriptorSetsUbo[i];
-			descriptorWrites[0].dstBinding = 0;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pBufferInfo = &uniformBufferInfo;
-
-			VkDescriptorBufferInfo storageBufferInfoLastFrame{};
-			storageBufferInfoLastFrame.buffer = m_ParticleBuffers[(i - 1) % wVkConstants::g_MaxFramesInFlight]->GetGPUHandleRef().m_Buffers;
-			storageBufferInfoLastFrame.offset = 0;
-			storageBufferInfoLastFrame.range = sizeof(Particle) * PARTICLE_COUNT;
-
-			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstSet = m_ComputeDescriptorSetsRead[i];
-			descriptorWrites[1].dstBinding = 0;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].pBufferInfo = &storageBufferInfoLastFrame;
-
-			VkDescriptorBufferInfo storageBufferInfoCurrentFrame{};
-			storageBufferInfoCurrentFrame.buffer = m_ParticleBuffers[i]->GetGPUHandleRef().m_Buffers;
-			storageBufferInfoCurrentFrame.offset = 0;
-			storageBufferInfoCurrentFrame.range = sizeof(Particle) * PARTICLE_COUNT;
-
-			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[2].dstSet = m_ComputeDescriptorSetsWrite[i];
-			descriptorWrites[2].dstBinding = 0;
-			descriptorWrites[2].dstArrayElement = 0;
-			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[2].descriptorCount = 1;
-			descriptorWrites[2].pBufferInfo = &storageBufferInfoCurrentFrame;
-
-			vkUpdateDescriptorSets(wVkGlobals::g_Device, 3, descriptorWrites.data(), 0, nullptr);
-		}
-
-	}
-
-	void createComputePipeline()
-	{
-		
-
-	} */
-
 	void InitVulkan() {
-
-		// ToDo: Fix this madness...
 
 		m_BackEndRenderer.Initialize(m_Window, nullptr, nullptr);
 
@@ -1198,16 +924,16 @@ private:
 		createDescriptorSetLayout();
 		createDescriptorPool();
 		createDescriptorSets();
-
 		createGraphicsPipeline();
 		createRenderPass();
-		createDepthResources();
-		createFramebuffers();
 
-		createVertexBuffer();
-		createIndexBuffer();
+		const BufferFlags vbFlags = BufferFlags::SRV | BufferFlags::VERTEX_BUFFER;
+		const std::string vbName = "Vertex Buffer";
+		m_VertexBuffer = new Buffer(g_vertices.data(), sizeof(g_vertices[0]), g_vertices.size(), vbFlags, vbName);
 
-
+		const BufferFlags ibFlags = BufferFlags::SRV | BufferFlags::INDEX_BUFFER;
+		const std::string ibName = "Index Buffer";
+		m_IndexBuffer = new Buffer(g_indices.data(), sizeof(g_indices[0]), g_indices.size(), ibFlags, ibName);
 
 		// Compute Stuff
 		createShaderStorageBuffers();
@@ -1219,11 +945,6 @@ private:
 		m_ParticleLayout.Initialize();
 
 		m_ParticlePipeline.Initialize(wVkConstants::shaderDir + "particle.spv", m_ParticleLayout);
-
-		//createComputeDescriptorSetup();
-		//createComputeDescriptorPool();
-		//createComputeDescriptorSets();
-		//createComputePipeline();
 
 		createCommandBuffer();
 		createSyncObjects();
@@ -1275,8 +996,6 @@ private:
 			throw std::runtime_error("failed to begin recording command buffer!");
 		}
 
-
-		// Logic
 		m_ComputeCmdList.SetComputePipeline(m_ParticlePipeline);
 		m_ComputeCmdList.BindResourceCBV(0, *m_DtConstbuffer[currentFrame]);
 		m_ComputeCmdList.BindResourceCBV(1, *m_ColourBuffer[currentFrame]);
@@ -1529,17 +1248,17 @@ private:
 		vkDestroyPipeline(wVkGlobals::g_Device, m_GraphicsPipelinePoints, nullptr);
 
 		vkDestroyPipelineLayout(wVkGlobals::g_Device, m_PipelineLayout, nullptr);
-		vkDestroyRenderPass(wVkGlobals::g_Device, m_RenderPass, nullptr);
 
 		vkDestroyShaderModule(wVkGlobals::g_Device, m_VertShaderModule, nullptr);
 		vkDestroyShaderModule(wVkGlobals::g_Device, m_FragShaderModule, nullptr);
 
-		destroySwapchain();
 		m_BackEndRenderer.Shutdown();
 
 		glfwDestroyWindow(m_Window);
 		glfwTerminate();
 	}
+
+
 
 	uint32_t currentFrame = 0;
 	Transform cubeModel;
@@ -1551,14 +1270,6 @@ private:
 	// Commands
 	VkCommandBuffer m_CommandBuffer[wVkConstants::g_MaxFramesInFlight] = {};
 	CommandList m_ComputeCmdList;
-
-	std::vector<VkFramebuffer> m_SwapChainFramebuffers;
-	// Describes everything in the image: 2D/3D, mipmaps, depth buffer(?) etc.
-
-	// Depth
-	VkImage m_DepthImage = VK_NULL_HANDLE;
-	VkDeviceMemory m_DepthImageMemory = VK_NULL_HANDLE;
-	VkImageView m_DepthImageView = VK_NULL_HANDLE;
 
 	// Sync
 	VkSemaphore m_ImageAvailableSemaphore[wVkConstants::g_MaxFramesInFlight] = {};
@@ -1575,7 +1286,6 @@ private:
 
 	// Pipeline
 	VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
-	VkRenderPass m_RenderPass = VK_NULL_HANDLE;
 
 	// Descriptors
 	VkDescriptorSetLayout m_DescSetLayout = VK_NULL_HANDLE;

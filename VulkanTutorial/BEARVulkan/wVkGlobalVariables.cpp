@@ -25,16 +25,16 @@ namespace wVkGlobals
 	wVkHelpers::wVkSwapchain g_SwapChain = {};
 	std::vector<VkImage> g_SwapChainImages;
 	std::vector<VkImageView> g_SwapChainImageViews;
+	std::vector<VkFramebuffer> g_SwapChainFramebuffers;
+
+	// ToDo Support depth as texture
+	VkImage g_DepthImage = VK_NULL_HANDLE;;
+	VkDeviceMemory g_DepthImageMemory = VK_NULL_HANDLE;;
+	VkImageView g_DepthImageView = VK_NULL_HANDLE;;
 
 	// ImGui
 	ImGui_ImplVulkanH_Window g_ImGuiWindow;
 	VkDescriptorPool g_ImguiPool = VK_NULL_HANDLE;
 	VkRenderPass g_ImGuiRenderPass = VK_NULL_HANDLE;
 
-	// Useful variables
-	uint32_t g_MinImageCount = 0; //Gotten from createSwapchain 
-	uint32_t g_FrameIndex = 0;
-	uint32_t g_RTVDescSize = 0;
-	uint32_t g_CBV_SRV_UAVDescSize = 0;
-	uint32_t g_SamplerDescSize = 0;
 } // namespace Ball::GlobalDX12

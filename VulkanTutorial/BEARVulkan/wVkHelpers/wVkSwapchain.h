@@ -1,7 +1,10 @@
 #pragma once
 #include <algorithm>
 #include <vector>
+#include <array>
 
+
+#include "wVkQueueFamilies.h"
 #include "BEARVulkan/wVkGlobalVariables.h"
 #include "GLFW/glfw3.h"
 #include "vulkan/vulkan.h"
@@ -150,6 +153,31 @@ namespace wVkHelpers {
 
 		return swapchain;
 
+	}
+
+	inline VkFramebuffer createFramebuffer(int index)
+	{
+		VkFramebuffer framebuffer;
+		const std::array<VkImageView, 2> attachments = {
+				wVkGlobals::g_SwapChainImageViews[index],
+				wVkGlobals::g_DepthImageView
+		};
+
+		VkFramebufferCreateInfo framebufferInfo{};
+		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.renderPass = wVkGlobals::g_RenderPass;
+		framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+		framebufferInfo.pAttachments = attachments.data();
+		framebufferInfo.width = wVkGlobals::g_SwapChain.swapChainExtent.width;
+		framebufferInfo.height = wVkGlobals::g_SwapChain.swapChainExtent.height;
+		framebufferInfo.layers = 1;
+
+
+		if (vkCreateFramebuffer(wVkGlobals::g_Device, &framebufferInfo, nullptr, &framebuffer) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create framebuffer!");
+		}
+
+		return framebuffer;
 	}
 
 }

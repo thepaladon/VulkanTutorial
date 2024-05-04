@@ -6,8 +6,9 @@
 #include "wVkHelpers/wVkInstance.h"
 #include "wVkHelpers/wVkLogicalDevice.h"
 #include "wVkHelpers/wVkPhysicalDevice.h"
+#include "wVkHelpers/wVkTemp.h"
 #include "wVkHelpers/wVkTexture.h"
-
+#include "wVkHelpers/wVkHelpers.h"
 
 using namespace wVkGlobals;
 
@@ -22,6 +23,15 @@ void destroySwapchain()
 		}
 		vkDestroySwapchainKHR(g_Device, g_SwapChain.swapChain, nullptr);
 	}
+
+	for (auto& framebuffer : g_SwapChainFramebuffers) {
+		vkDestroyFramebuffer(g_Device, framebuffer, nullptr);
+	}
+
+
+	vkDestroyImageView(g_Device, g_DepthImageView, nullptr);
+	vkDestroyImage(g_Device, g_DepthImage, nullptr);
+	vkFreeMemory(g_Device, g_DepthImageMemory, nullptr);
 }
 
 void createSwapchainData(GLFWwindow* window)
@@ -37,7 +47,6 @@ void createSwapchainData(GLFWwindow* window)
 	// Create new swapchain
 	swapchain = wVkHelpers::createSwapChain(window);
 
-
 	auto& imgCount = swapchain.imageCount;
 	vkGetSwapchainImagesKHR(g_Device, swapchain.swapChain, &imgCount, nullptr);
 	swapchainImage.resize(imgCount);
@@ -47,6 +56,18 @@ void createSwapchainData(GLFWwindow* window)
 
 	for (uint32_t i = 0; i < swapchainImage.size(); i++) {
 		swapchainViews[i] = wVkHelpers::createImageView(swapchainImage[i], 1, swapchain.swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+	}
+
+	const VkFormat depthFormat = wVkHelpers::findDepthFormat();
+
+	const auto& ext = g_SwapChain.swapChainExtent;
+	wVkHelpers::createImage2D(ext.width, ext.height, 1, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, g_DepthImage, g_DepthImageMemory);
+
+	g_DepthImageView = wVkHelpers::createImageView(g_DepthImage, 1, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+
+	g_SwapChainFramebuffers.resize(g_SwapChainImageViews.size());
+	for (int i = 0; i < g_SwapChainImageViews.size(); i++) {
+		g_SwapChainFramebuffers[i] = wVkHelpers::createFramebuffer(i);
 	}
 }
 
@@ -78,11 +99,14 @@ void BackEndRenderer::Initialize(GLFWwindow* window, Texture** mainRenderTargets
 	vkGetDeviceQueue(g_Device, queueIndices.presentFamily.value(), 0, &g_PresentQueue);
 	vkGetDeviceQueue(g_Device, queueIndices.graphicsAndComputeFamily.value(), 0, &g_ComputeQueue);
 
+	g_RenderPass = wVkHelpers::createRenderPass();
 	createSwapchainData(window);
+
 
 	g_CommandPool = wVkHelpers::createCommandPool();
 
 	wVkHelpers::initImgui(window, g_ImGuiRenderPass, g_ImguiPool);
+
 
 }
 
@@ -135,8 +159,7 @@ void BackEndRenderer::Shutdown()
 	}
 
 	vkDestroySurfaceKHR(g_Instance, g_Surface, nullptr);
-
-
+	vkDestroyRenderPass(g_Device, g_RenderPass, nullptr);
 
 	// Need to be last
 	vkDestroyDevice(g_Device, nullptr);

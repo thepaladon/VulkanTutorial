@@ -1,4 +1,6 @@
 #pragma once
+#include <unordered_map>
+
 #include "vulkan/vulkan.h"
 
 #include "wVkConstants.h"
@@ -27,18 +29,21 @@ enum class DataType
 	MAX_ENUM = 0xffff
 };
 
+
 // We do the Pipeline Construction before the first use of Dispatch
 struct ShaderBindingData
 {
 	uint32_t m_BindingLocation = UINT32_MAX;
 	DataType m_Type = DataType::MAX_ENUM;
-	void* m_Resource = nullptr;  // cast from DataType
+	void* m_ResourceLocation = nullptr;  // cast from DataType
 	VkDescriptorSetLayoutBinding m_Layout;
 };
 
 struct wVkPipelineLayout
 {
-	std::vector<ShaderBindingData> m_BindingCache;
+	std::vector<ShaderBindingData> m_CurrentDescSetBindings;
+	std::unordered_map<std::size_t, std::vector<ShaderBindingData>> m_BindingsCache;
+	std::unordered_map<std::size_t, VkDescriptorSet> m_DescriptorSetCache;
 };
 
 struct wVkComputePipeline
@@ -51,7 +56,7 @@ struct wVkComputePipeline
 	VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
 
 	// Run-time
-	std::vector<VkDescriptorSet> m_DescriptorSets;
+	//std::vector<VkDescriptorSet> m_DescriptorSets;
 	
 };
 

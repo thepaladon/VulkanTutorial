@@ -49,31 +49,31 @@ void CommandList::BindResourceCBV(const uint32_t layoutLocation, Buffer& buffer)
 	auto shaderBindingData = wVkHelpers::createShaderBindingData(layoutLocation, &buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 
 	// ToDo checks whether there is something already bound to this slot.
-	g_boundPipeline->GetShaderLayoutRef().GetShaderLayoutHandleRef().m_BindingCache.push_back(shaderBindingData);
+	g_boundPipeline->GetShaderLayoutRef().GetShaderLayoutHandleRef().m_CurrentDescSetBindings.push_back(shaderBindingData);
 }
 
 void CommandList::BindResourceSRV(const uint32_t layoutLocation, Buffer& buffer)
 {
 	const auto  shaderBindingData = wVkHelpers::createShaderBindingData(layoutLocation, &buffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-	g_boundPipeline->GetShaderLayoutRef().GetShaderLayoutHandleRef().m_BindingCache.push_back(shaderBindingData);
+	g_boundPipeline->GetShaderLayoutRef().GetShaderLayoutHandleRef().m_CurrentDescSetBindings.push_back(shaderBindingData);
 }
 
 void CommandList::BindResourceUAV(const uint32_t layoutLocation, Buffer& buffer)
 {
 	const auto  shaderBindingData = wVkHelpers::createShaderBindingData(layoutLocation, &buffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-	g_boundPipeline->GetShaderLayoutRef().GetShaderLayoutHandleRef().m_BindingCache.push_back(shaderBindingData);
+	g_boundPipeline->GetShaderLayoutRef().GetShaderLayoutHandleRef().m_CurrentDescSetBindings.push_back(shaderBindingData);
 }
 
 void CommandList::BindResourceSRV(const uint32_t layoutLocation, Texture& texture)
 {
 	const auto shaderBindingData = wVkHelpers::createShaderBindingData(layoutLocation, &texture, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-	g_boundPipeline->GetShaderLayoutRef().GetShaderLayoutHandleRef().m_BindingCache.push_back(shaderBindingData);
+	g_boundPipeline->GetShaderLayoutRef().GetShaderLayoutHandleRef().m_CurrentDescSetBindings.push_back(shaderBindingData);
 }
 
 void CommandList::BindResourceUAV(const uint32_t layoutLocation, Texture& texture)
 {
 	const auto  shaderBindingData = wVkHelpers::createShaderBindingData(layoutLocation, &texture, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-	g_boundPipeline->GetShaderLayoutRef().GetShaderLayoutHandleRef().m_BindingCache.push_back(shaderBindingData);
+	g_boundPipeline->GetShaderLayoutRef().GetShaderLayoutHandleRef().m_CurrentDescSetBindings.push_back(shaderBindingData);
 }
 
 void CommandList::BindResourceSRV(const uint32_t layoutLocation, TLAS& tlas)
@@ -107,13 +107,12 @@ void CommandList::CopyResource(Texture& textureDst, Texture& textureSrc)
 void CommandList::SetComputePipeline(ComputePipelineDescription& cpd)
 {
 	g_boundPipeline = &cpd;
-	g_boundPipeline->GetShaderLayoutRef().GetShaderLayoutHandleRef().m_BindingCache.clear();
+	g_boundPipeline->GetShaderLayoutRef().GetShaderLayoutHandleRef().m_CurrentDescSetBindings.clear();
 }
 
 void CommandList::Reset()
 {
 	ASSERT(false, "Not Implemented");
-
 }
 
 void CommandList::Dispatch(int currentFrame, const uint32_t numThreadGroupsX, const uint32_t numThreadGroupsY,
@@ -122,7 +121,7 @@ void CommandList::Dispatch(int currentFrame, const uint32_t numThreadGroupsX, co
 	auto& shaderLayout = g_boundPipeline->GetShaderLayoutRef();
 	auto& boundPipeline = g_boundPipeline->GetPipelineHandleRef();
 
-	const auto& shaderParams = shaderLayout.GetShaderLayoutHandleRef().m_BindingCache;
+	const auto& shaderParams = shaderLayout.GetShaderLayoutHandleRef().m_CurrentDescSetBindings;
 
 	static bool doOnce = true;
 	if (doOnce) {
@@ -172,18 +171,7 @@ void CommandList::Dispatch(int currentFrame, const uint32_t numThreadGroupsX, co
 		// END DESCRIPTOR POOL CREATION -----------------------------
 
 
-	// CREATE DESCRIPTOR SETS ----------
-		const std::vector<VkDescriptorSetLayout> layouts(wVkConstants::g_MaxFramesInFlight, boundPipeline.m_DescSetLayout);
-		VkDescriptorSetAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.descriptorPool = boundPipeline.m_DescriptorPool;
-		allocInfo.descriptorSetCount = static_cast<uint32_t>(wVkConstants::g_MaxFramesInFlight);
-		allocInfo.pSetLayouts = layouts.data();
-
-		boundPipeline.m_DescriptorSets.resize(wVkConstants::g_MaxFramesInFlight);
-		if (vkAllocateDescriptorSets(wVkGlobals::g_Device, &allocInfo, boundPipeline.m_DescriptorSets.data()) != VK_SUCCESS) {
-			throw std::runtime_error("Failed to allocate compute descriptor sets!");
-		}
+		
 
 		// CREATE PIPELINE -----------------
 		VkPipelineShaderStageCreateInfo computeShaderStageInfo{};
@@ -216,46 +204,86 @@ void CommandList::Dispatch(int currentFrame, const uint32_t numThreadGroupsX, co
 		doOnce = false;
 	}
 
-	std::vector<VkWriteDescriptorSet> descriptorWrites;
+	auto& cache = shaderLayout.GetShaderLayoutHandleRef().m_BindingsCache;
+	auto hash = wVkHelpers::hashArrayOfShaderBindingData(shaderParams);
 
-	for (auto test : shaderParams)
+	VkDescriptorSet currentFramesDescriptorSet;
+
+	auto it = cache.find(hash);
+	if (it == cache.end()) {
+
+		// CREATE DESCRIPTOR SETS ----------
+		const std::vector<VkDescriptorSetLayout> layouts(wVkConstants::g_MaxFramesInFlight, boundPipeline.m_DescSetLayout);
+		VkDescriptorSetAllocateInfo allocInfo{};
+		VkDescriptorSet descSet;
+		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocInfo.descriptorPool = boundPipeline.m_DescriptorPool;
+		allocInfo.descriptorSetCount = 1;
+		allocInfo.pSetLayouts = layouts.data();
+
+		if (vkAllocateDescriptorSets(wVkGlobals::g_Device, &allocInfo, &descSet) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to allocate compute descriptor sets!");
+		}
+
+		// Try to get an existing cache heap
+		std::vector<VkWriteDescriptorSet> descriptorWrites;
+
+		for (auto bindingData : shaderParams)
+		{
+			// For now we only work with buffers
+			Buffer* buffer = static_cast<Buffer*>(bindingData.m_ResourceLocation);
+
+			VkDescriptorBufferInfo* bufferInfo = new VkDescriptorBufferInfo();
+			bufferInfo->buffer = buffer->GetGPUHandleRef().m_Buffers; //deltaTime
+			bufferInfo->offset = 0;
+			bufferInfo->range = buffer->GetSizeBytes();
+
+			VkWriteDescriptorSet descWrite{};
+			descWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descWrite.dstSet = descSet;
+			descWrite.dstBinding = bindingData.m_BindingLocation;
+			descWrite.dstArrayElement = 0;
+			descWrite.descriptorType = bindingData.m_Layout.descriptorType;
+			descWrite.descriptorCount = 1;
+			descWrite.pBufferInfo = bufferInfo;
+
+			descriptorWrites.push_back(descWrite);
+		}
+
+		vkUpdateDescriptorSets(wVkGlobals::g_Device, (uint32_t)shaderParams.size(), descriptorWrites.data(), 0, nullptr);
+
+		for (auto& desc : descriptorWrites)
+		{
+			delete desc.pBufferInfo;
+		}
+
+		auto& descSetCache = shaderLayout.GetShaderLayoutHandleRef().m_DescriptorSetCache;
+
+		descSetCache[hash] = descSet;
+		cache[hash] = shaderParams;
+		currentFramesDescriptorSet = descSet;
+
+		// Check to make sure we're not going above our Descriptor Set Pool
+		assert(wVkConstants::g_MaxDecriptorSets >= descSetCache.size());
+
+	}else
 	{
-		// For now we only work with buffers
-		Buffer* buffer = static_cast<Buffer*>(test.m_Resource);
-
-		VkDescriptorBufferInfo* bufferInfo = new VkDescriptorBufferInfo();
-		bufferInfo->buffer = buffer->GetGPUHandleRef().m_Buffers; //deltaTime
-		bufferInfo->offset = 0;
-		bufferInfo->range = buffer->GetSizeBytes();
-
-		VkWriteDescriptorSet descWrite{};
-		descWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descWrite.dstSet = boundPipeline.m_DescriptorSets[currentFrame];
-		descWrite.dstBinding = test.m_BindingLocation;
-		descWrite.dstArrayElement = 0;
-		descWrite.descriptorType = test.m_Layout.descriptorType;
-		descWrite.descriptorCount = 1;
-		descWrite.pBufferInfo = bufferInfo;
-
-		descriptorWrites.push_back(descWrite);
+		currentFramesDescriptorSet = shaderLayout.GetShaderLayoutHandleRef().m_DescriptorSetCache[hash];
 	}
+	
 
-	vkUpdateDescriptorSets(wVkGlobals::g_Device, (uint32_t)shaderParams.size(), descriptorWrites.data(), 0, nullptr);
-
-	for (auto& desc : descriptorWrites)
-	{
-		delete desc.pBufferInfo;
-	}
 	// END CREATE DESCRIPTOR SETS -------
 
 	// ToDo : Command Buffer indexing, won't work without it
 	const VkCommandBuffer commandBuffer = m_CmdListHandle.m_CommandBuffer[currentFrame];
 
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, boundPipeline.m_Pipeline);
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, boundPipeline.m_PipelineLayout, 0, 1, &boundPipeline.m_DescriptorSets[currentFrame], 0, 0);
+
+	// Function for reserver engineering the descriptor set here
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, boundPipeline.m_PipelineLayout, 0, 1, &currentFramesDescriptorSet, 0, 0);
 
 	vkCmdDispatch(commandBuffer, numThreadGroupsX, numThreadGroupsY, numThreadGroupsZ);
-
+	
 }
 
 void CommandList::Execute()

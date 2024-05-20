@@ -1113,9 +1113,7 @@ private:
 			LOG_ERROR("ASSIMP Error: %s", importer.GetErrorString());
 		}
 
-		
 		int width, height, channels;
-
 		// Load the image
 		filePath = R"(Resources\Images\bricks.png)";
 		if (unsigned char* data = stbi_load(filePath, &width, &height, &channels, 0)) {

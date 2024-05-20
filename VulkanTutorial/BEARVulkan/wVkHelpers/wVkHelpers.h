@@ -71,7 +71,7 @@ namespace wVkHelpers
 			return DataType::BUFFER;
 			break;
 
-		default: ;
+		default:;
 			ASSERT(false, "Not Implemented");
 		}
 
@@ -91,7 +91,7 @@ namespace wVkHelpers
 		binding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
 		const ShaderBindingData shaderBindingData{
-			layoutLocation, 
+			layoutLocation,
 			getTypeFromDescriptor(type),
 			resource,
 			binding
@@ -99,6 +99,59 @@ namespace wVkHelpers
 
 		return shaderBindingData;
 	}
+
+	// ToDo: Hashing might be faster than doing this
+	inline bool compareShaderBindingData(const ShaderBindingData& a, const ShaderBindingData& b) {
+		return a.m_BindingLocation == b.m_BindingLocation &&
+			a.m_Type == b.m_Type &&
+			a.m_ResourceLocation == b.m_ResourceLocation &&
+			a.m_Layout.binding == b.m_Layout.binding &&
+			a.m_Layout.descriptorType == b.m_Layout.descriptorType &&
+			a.m_Layout.descriptorCount == b.m_Layout.descriptorCount &&
+			a.m_Layout.stageFlags == b.m_Layout.stageFlags;
+	}
+
+	inline bool compareShaderBindingDataVectors(const std::vector<ShaderBindingData>& vec1, const std::vector<ShaderBindingData>& vec2) {
+		if (vec1.size() != vec2.size()) {
+			return false;
+		}
+
+		for (std::size_t i = 0; i < vec1.size(); ++i) {
+			if (!compareShaderBindingData(vec1[i], vec2[i])) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	// Hash function for VkDescriptorSetLayoutBinding
+	inline std::size_t hashVkDescriptorSetLayoutBinding(const VkDescriptorSetLayoutBinding& binding) {
+		std::size_t hash = std::hash<uint32_t>{}(binding.binding);
+		hash ^= std::hash<uint32_t>{}(binding.descriptorType) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+		hash ^= std::hash<uint32_t>{}(binding.descriptorCount) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+		hash ^= std::hash<uint32_t>{}(binding.stageFlags) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+		return hash;
+	}
+
+	// Hash function for ShaderBindingData
+	inline std::size_t hashShaderBindingData(const ShaderBindingData& data) {
+		std::size_t hash = std::hash<uint32_t>{}(data.m_BindingLocation);
+		hash ^= std::hash<int>{}(static_cast<int>(data.m_Type)) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+		hash ^= std::hash<std::uintptr_t>{}(reinterpret_cast<std::uintptr_t>(data.m_ResourceLocation)) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+		hash ^= hashVkDescriptorSetLayoutBinding(data.m_Layout) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+		return hash;
+	}
+
+	// Hash function for an array of ShaderBindingData
+	inline std::size_t hashArrayOfShaderBindingData(const std::vector<ShaderBindingData>& dataArray) {
+		std::size_t combinedHash = 0;
+		for (const auto& data : dataArray) {
+			combinedHash ^= hashShaderBindingData(data) + 0x9e3779b9 + (combinedHash << 6) + (combinedHash >> 2);
+		}
+		return combinedHash;
+	}
+
 
 	inline VkRenderPass createRenderPass()
 	{

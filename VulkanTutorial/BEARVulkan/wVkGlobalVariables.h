@@ -59,9 +59,6 @@ namespace wVkGlobals
 	extern VkDescriptorPool g_ImguiPool;
 	extern VkRenderPass g_ImGuiRenderPass;
 
-
 	// Rasterization
 	extern VkRenderPass g_StandardRenderPass;
-
-
 }

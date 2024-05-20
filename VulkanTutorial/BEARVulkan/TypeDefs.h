@@ -14,6 +14,10 @@ enum class ShaderParameter;
 struct wVkCommandList
 {
 	VkCommandBuffer m_CommandBuffer[wVkConstants::g_MaxFramesInFlight] = {};
+
+	// Command List Synchronization
+	VkFence m_InFlightFences[wVkConstants::g_MaxFramesInFlight] = {};
+	VkSemaphore m_FinishedSemaphores[wVkConstants::g_MaxFramesInFlight] = {};
 };
 
 struct wVkDescriptorHeap

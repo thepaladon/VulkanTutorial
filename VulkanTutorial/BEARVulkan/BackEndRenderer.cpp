@@ -122,11 +122,14 @@ void BackEndRenderer::ImguiEndFrame()
 
 void BackEndRenderer::EndFrame()
 {
+	m_FrameIndex = (m_FrameIndex + 1) % wVkConstants::g_MaxFramesInFlight;
+	m_FrameCounter++;
 
 }
 
 void BackEndRenderer::BeginFrame()
 {
+	
 
 }
 
@@ -160,6 +163,8 @@ void BackEndRenderer::Shutdown()
 
 	vkDestroySurfaceKHR(g_Instance, g_Surface, nullptr);
 	vkDestroyRenderPass(g_Device, g_RenderPass, nullptr);
+
+	
 
 	// Need to be last
 	vkDestroyDevice(g_Device, nullptr);

@@ -18,6 +18,7 @@ public:
 	void Initialize();
 	void Destroy();
 
+
 	// Binds shader with a shader layout
 	void SetComputePipeline(ComputePipelineDescription& cpd);
 
@@ -39,17 +40,24 @@ public:
 	void CopyResource(Texture& textureDst, Texture& textureSrc); // Textures should have same size and format
 
 	// Sync Functions
+	void Begin(uint32_t test);
 	void Execute();
 	void Reset();
+
 	// Dispatches a selected number of threads to execute the binded shader (can sync all the GPU-CPU resources for
 	// PS5 in prior to launch)
-	void Dispatch(int currentFrame, const uint32_t numThreadGroupsX, const uint32_t numThreadGroupsY = 1, const uint32_t numThreadGroupsZ
+	void Dispatch(const uint32_t numThreadGroupsX, const uint32_t numThreadGroupsY = 1, const uint32_t numThreadGroupsZ
 		              = 1, bool syncBeforeDispatch = false);
 
 	// Getters
 	GPUCommandListHandle& GetCommandListHandleRef() { return m_CmdListHandle; }
 
+	// This should NOT return `VkSemaphore`. Fix ASAP when you figure out how to handle sync objects agnostically
+	VkSemaphore& GetSyncObject();
+	
+
 private:
+	uint32_t m_FrameIndex = 0;
 	GPUCommandListHandle m_CmdListHandle;
 };
 

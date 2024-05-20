@@ -17,11 +17,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <cstdint>		// Necessary for uint32_t
-#include <limits>		// Necessary for std::numeric_limits
 #include <algorithm>	// Necessary for std::clamp
 #include <array>
 #include <cassert>
-#include <fstream>
 #include <iostream>
 #include <string>
 #include <stdexcept>
@@ -580,10 +578,9 @@ private:
 
 		m_ComputeCmdList.Initialize();
 
-		
 	}
 
-	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t currentFrame) {
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = 0; // Optional
@@ -706,11 +703,6 @@ private:
 				vkCreateSemaphore(wVkGlobals::g_Device, &semaphoreInfo, nullptr, &m_RenderFinishedSemaphore[i]) != VK_SUCCESS ||
 				vkCreateFence(wVkGlobals::g_Device, &fenceInfo, nullptr, &m_InFlightFence[i]) != VK_SUCCESS) {
 				throw std::runtime_error("failed to create semaphores!");
-			}
-
-			if (vkCreateSemaphore(wVkGlobals::g_Device, &semaphoreInfo, nullptr, &m_ComputeFinishedSemaphores[i]) != VK_SUCCESS ||
-				vkCreateFence(wVkGlobals::g_Device, &fenceInfo, nullptr, &m_ComputeInFlightFences[i]) != VK_SUCCESS) {
-				throw std::runtime_error("failed to create compute synchronization objects for a frame!");
 			}
 		}
 	}
@@ -871,9 +863,6 @@ private:
 		stbi_image_free(pixels);
 	}
 
-
-
-
 	void createShaderStorageBuffers()
 	{
 		// Initialize particles
@@ -965,58 +954,28 @@ private:
 
 	}
 
-	void updateDtBuffer(uint32_t currentImage, float dt) {
-		m_DtConstbuffer[currentImage]->UpdateData(&dt, sizeof(float));
-		m_ColourBuffer[currentImage]->UpdateData(&m_ParticleColor, sizeof(m_ParticleColor));
-	}
+	
 
-	void drawFrame(double dt)
+	void drawFrame(float dt)
 	{
 		VkResult res = VK_SUCCESS;
 
-		const auto& compCommandBuffer = m_ComputeCmdList.GetCommandListHandleRef().m_CommandBuffer[currentFrame];
-		const auto& computeFences = m_ComputeInFlightFences[currentFrame];
-		const auto& computeSemaph = m_ComputeFinishedSemaphores[currentFrame];
+		m_BackEndRenderer.BeginFrame();
 
-		// Compute submission
-		vkWaitForFences(wVkGlobals::g_Device, 1, &computeFences, VK_TRUE, UINT64_MAX);
+		const auto& currentFrame = m_BackEndRenderer.GetFrameIndex();
+		m_ComputeCmdList.Begin(currentFrame);
 
-		updateDtBuffer(currentFrame, (float)dt);
-
-		vkResetFences(wVkGlobals::g_Device, 1, &computeFences);
-
-		vkResetCommandBuffer(compCommandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
-
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = 0; // Optional
-		beginInfo.pInheritanceInfo = nullptr; // Optional
-
-		if (vkBeginCommandBuffer(compCommandBuffer, &beginInfo) != VK_SUCCESS) {
-			throw std::runtime_error("failed to begin recording command buffer!");
-		}
+		m_DtConstbuffer[currentFrame]->UpdateData(&dt, sizeof(float));
+		m_ColourBuffer[currentFrame]->UpdateData(&m_ParticleColor, sizeof(m_ParticleColor));
 
 		m_ComputeCmdList.SetComputePipeline(m_ParticlePipeline);
 		m_ComputeCmdList.BindResourceCBV(0, *m_DtConstbuffer[currentFrame]);
 		m_ComputeCmdList.BindResourceCBV(1, *m_ColourBuffer[currentFrame]);
 		m_ComputeCmdList.BindResourceSRV(2, *m_ParticleBuffers[(currentFrame - 1) % wVkConstants::g_MaxFramesInFlight]);
 		m_ComputeCmdList.BindResourceUAV(3, *m_ParticleBuffers[currentFrame % wVkConstants::g_MaxFramesInFlight]);
-		m_ComputeCmdList.Dispatch((int)currentFrame, PARTICLE_COUNT / 256, 1, 1);
+		m_ComputeCmdList.Dispatch(PARTICLE_COUNT / 256, 1, 1);
 
-		VkSubmitInfo compSubmitInfo{};
-		compSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		compSubmitInfo.commandBufferCount = 1;
-		compSubmitInfo.pCommandBuffers = &compCommandBuffer;
-		compSubmitInfo.signalSemaphoreCount = 1;
-		compSubmitInfo.pSignalSemaphores = &computeSemaph;
-
-		if (vkEndCommandBuffer(compCommandBuffer) != VK_SUCCESS) {
-			throw std::runtime_error("failed to record command buffer!");
-		}
-
-		if (vkQueueSubmit(wVkGlobals::g_ComputeQueue, 1, &compSubmitInfo, computeFences) != VK_SUCCESS) {
-			throw std::runtime_error("failed to submit compute command buffer!");
-		}
+		m_ComputeCmdList.Execute();
 
 		const auto commandBuffer = m_CommandBuffer[currentFrame];
 		const auto renderedS = m_RenderFinishedSemaphore[currentFrame];
@@ -1042,9 +1001,9 @@ private:
 		vkResetFences(wVkGlobals::g_Device, 1, &inFlightFence);
 
 		vkResetCommandBuffer(commandBuffer, 0);
-		recordCommandBuffer(commandBuffer, imageIndex);
+		recordCommandBuffer(commandBuffer, imageIndex, currentFrame);
 
-		const VkSemaphore waitSemaphores[] = { computeSemaph, imageAvailableS };
+		const VkSemaphore waitSemaphores[] = { m_ComputeCmdList.GetSyncObject(), imageAvailableS };
 		const VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
 		VkSubmitInfo submitInfo{};
@@ -1084,7 +1043,7 @@ private:
 			throw std::runtime_error("failed to acquire swap chain image!");
 		}
 
-		currentFrame = (currentFrame + 1) % wVkConstants::g_MaxFramesInFlight;
+		m_BackEndRenderer.EndFrame();
 	}
 
 
@@ -1130,10 +1089,10 @@ private:
 		}
 
 		while (!glfwWindowShouldClose(m_Window)) {
-			static double lastTime = glfwGetTime();
-			static double runningTime = glfwGetTime();
-			const double currentTime = glfwGetTime();
-			const double deltaTimeMs = (currentTime - lastTime) * 1000;
+			static float lastTime = static_cast<float>(glfwGetTime());
+			static float runningTime = static_cast<float>(glfwGetTime());
+			const float currentTime =  static_cast<float>(glfwGetTime());
+			const float deltaTimeMs = (currentTime - lastTime) * 1000;
 			lastTime = currentTime;
 			runningTime += deltaTimeMs;
 
@@ -1227,11 +1186,7 @@ private:
 			vkDestroySemaphore(wVkGlobals::g_Device, m_ImageAvailableSemaphore[i], nullptr);
 			vkDestroySemaphore(wVkGlobals::g_Device, m_RenderFinishedSemaphore[i], nullptr);
 			vkDestroyFence(wVkGlobals::g_Device, m_InFlightFence[i], nullptr);
-
-			vkDestroySemaphore(wVkGlobals::g_Device, m_ComputeFinishedSemaphores[i], nullptr);
-			vkDestroyFence(wVkGlobals::g_Device, m_ComputeInFlightFences[i], nullptr);
 		}
-
 
 		delete m_Texture;
 		delete m_Sampler;
@@ -1250,6 +1205,7 @@ private:
 		vkDestroyShaderModule(wVkGlobals::g_Device, m_VertShaderModule, nullptr);
 		vkDestroyShaderModule(wVkGlobals::g_Device, m_FragShaderModule, nullptr);
 
+		m_ComputeCmdList.Destroy();
 		m_BackEndRenderer.Shutdown();
 
 		glfwDestroyWindow(m_Window);
@@ -1257,8 +1213,6 @@ private:
 	}
 
 
-
-	uint32_t currentFrame = 0;
 	Transform cubeModel;
 
 	FreeCamera camera;
@@ -1316,9 +1270,7 @@ private:
 	ShaderLayout m_ParticleLayout;
 	ComputePipelineDescription m_ParticlePipeline;
 
-	VkFence m_ComputeInFlightFences[wVkConstants::g_MaxFramesInFlight] = {};
-	VkSemaphore m_ComputeFinishedSemaphores[wVkConstants::g_MaxFramesInFlight] = {};
-
+	
 	// GLFW
 	std::string m_WindowName = "VulkanTutorial";
 	GLFWwindow* m_Window = nullptr;

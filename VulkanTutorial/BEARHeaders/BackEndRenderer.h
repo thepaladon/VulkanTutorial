@@ -32,4 +32,11 @@ public:
 
 	void PresentFrame();
 	void WaitForCmdQueueExecute();
+
+	uint32_t GetFrameIndex() const { return m_FrameIndex; }
+	uint32_t GetFrameCounter() const { return m_FrameCounter; }
+
+private:
+	uint32_t m_FrameIndex;
+	uint32_t m_FrameCounter;
 };

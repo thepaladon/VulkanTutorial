@@ -27,11 +27,32 @@ void CommandList::Initialize()
 	if (vkAllocateCommandBuffers(wVkGlobals::g_Device, &compAllocInfo, m_CmdListHandle.m_CommandBuffer) != VK_SUCCESS) {
 		throw std::runtime_error("failed to allocate command buffers!");
 	}
+
+	// Create sync objects
+	VkSemaphoreCreateInfo semaphoreInfo{};
+	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	VkFenceCreateInfo fenceInfo{};
+	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; //To make sure we get to our first frame
+
+	for (size_t i = 0; i < wVkConstants::g_MaxFramesInFlight; i++) {
+		if (vkCreateSemaphore(wVkGlobals::g_Device, &semaphoreInfo, nullptr, &m_CmdListHandle.m_FinishedSemaphores[i]) != VK_SUCCESS ||
+			vkCreateFence(wVkGlobals::g_Device, &fenceInfo, nullptr, &m_CmdListHandle.m_InFlightFences[i]) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create compute synchronization objects for a frame!");
+		}
+	}
+
 }
 
 void CommandList::Destroy()
 {
-	ASSERT(false, "Not Implemented");
+	vkFreeCommandBuffers(wVkGlobals::g_Device, wVkGlobals::g_CommandPool, wVkConstants::g_MaxFramesInFlight, m_CmdListHandle.m_CommandBuffer);
+
+	for (size_t i = 0; i < wVkConstants::g_MaxFramesInFlight; i++) {
+		vkDestroySemaphore(wVkGlobals::g_Device, m_CmdListHandle.m_FinishedSemaphores[i], nullptr);
+		vkDestroyFence(wVkGlobals::g_Device, m_CmdListHandle.m_InFlightFences[i], nullptr);
+	}
 }
 
 void CommandList::SetDescriptorHeaps(ResourceDescriptorHeap* heapR, SamplerDescriptorHeap* heapS)
@@ -115,7 +136,7 @@ void CommandList::Reset()
 	ASSERT(false, "Not Implemented");
 }
 
-void CommandList::Dispatch(int currentFrame, const uint32_t numThreadGroupsX, const uint32_t numThreadGroupsY,
+void CommandList::Dispatch(const uint32_t numThreadGroupsX, const uint32_t numThreadGroupsY,
 	const uint32_t numThreadGroupsZ, bool syncBeforeDispatch)
 {
 	auto& shaderLayout = g_boundPipeline->GetShaderLayoutRef();
@@ -169,9 +190,6 @@ void CommandList::Dispatch(int currentFrame, const uint32_t numThreadGroupsX, co
 			throw std::runtime_error("failed to create descriptor pool!");
 		}
 		// END DESCRIPTOR POOL CREATION -----------------------------
-
-
-		
 
 		// CREATE PIPELINE -----------------
 		VkPipelineShaderStageCreateInfo computeShaderStageInfo{};
@@ -270,24 +288,63 @@ void CommandList::Dispatch(int currentFrame, const uint32_t numThreadGroupsX, co
 	{
 		currentFramesDescriptorSet = shaderLayout.GetShaderLayoutHandleRef().m_DescriptorSetCache[hash];
 	}
-	
-
 	// END CREATE DESCRIPTOR SETS -------
 
-	// ToDo : Command Buffer indexing, won't work without it
-	const VkCommandBuffer commandBuffer = m_CmdListHandle.m_CommandBuffer[currentFrame];
+	const VkCommandBuffer commandBuffer = m_CmdListHandle.m_CommandBuffer[m_FrameIndex];
 
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, boundPipeline.m_Pipeline);
-
-	// Function for reserver engineering the descriptor set here
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, boundPipeline.m_PipelineLayout, 0, 1, &currentFramesDescriptorSet, 0, 0);
-
 	vkCmdDispatch(commandBuffer, numThreadGroupsX, numThreadGroupsY, numThreadGroupsZ);
-	
+}
+
+VkSemaphore& CommandList::GetSyncObject()
+{
+	return m_CmdListHandle.m_FinishedSemaphores[m_FrameIndex];
+}
+
+void CommandList::Begin(uint32_t test)
+{
+	//m_FrameIndex = (m_FrameIndex + 1) % wVkConstants::g_MaxFramesInFlight;
+	m_FrameIndex = test;
+
+	const auto& fence = m_CmdListHandle.m_InFlightFences[m_FrameIndex];
+	vkWaitForFences(wVkGlobals::g_Device, 1, &fence, VK_TRUE, UINT64_MAX);
+
+	vkResetFences(wVkGlobals::g_Device, 1, &fence);
+
+	const auto& cb = m_CmdListHandle.m_CommandBuffer[m_FrameIndex];
+	vkResetCommandBuffer(cb, /*VkCommandBufferResetFlagBits*/ 0);
+
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = 0; // Optional
+	beginInfo.pInheritanceInfo = nullptr; // Optional
+
+	if (vkBeginCommandBuffer(cb, &beginInfo) != VK_SUCCESS) {
+		throw std::runtime_error("failed to begin recording command buffer!");
+	}
 }
 
 void CommandList::Execute()
 {
+	const auto& cb = m_CmdListHandle.m_CommandBuffer[m_FrameIndex];
+	const auto& semaph = m_CmdListHandle.m_FinishedSemaphores[m_FrameIndex];
+	const auto& fence = m_CmdListHandle.m_InFlightFences[m_FrameIndex];
+
+	VkSubmitInfo compSubmitInfo{};
+	compSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	compSubmitInfo.commandBufferCount = 1;
+	compSubmitInfo.pCommandBuffers = &cb;
+	compSubmitInfo.signalSemaphoreCount = 1;
+	compSubmitInfo.pSignalSemaphores = &semaph;
+
+	if (vkEndCommandBuffer(cb) != VK_SUCCESS) {
+		throw std::runtime_error("failed to record command buffer!");
+	}
+
+	if (vkQueueSubmit(wVkGlobals::g_ComputeQueue, 1, &compSubmitInfo, fence) != VK_SUCCESS) {
+		throw std::runtime_error("failed to submit compute command buffer!");
+	}
 
 }
 
